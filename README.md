@@ -6,7 +6,7 @@ Creating, repurposing, and formatting content for varied digital platforms (like
 ## The Solution
 CogenLab is an autonomous content factory that solves this by orchestrating specialized AI agents. It uses a Brand Analyst to scrape and emulate the company's voice, a Researcher to extract and verify facts, a Trend Analyst to inject real-time market data, and a Copywriter to draft platform-optimized posts. Finally, an autonomous Editor agent reviews and refines the copy to ensure high-quality, publication-ready output.
 
-## Key Features
+## Additional Features
 * **5-Agent Pipeline:** Utilizes five distinct agents operating in sequence: Brand Analyser, Researcher, Trend Analyser, Copywriter, and Editor.
 * **Special Filtering for Channels:** Features specialized filtering rules to uniquely constrain and format copy for distinct output platforms.
 * **Automated Content Scoring:** The Editor agent calculates and provides a final content score to evaluate the draft's overall quality and brand alignment before finalization.
