@@ -309,7 +309,7 @@ div[data-testid="stExpander"] summary {
 """, unsafe_allow_html=True)
 
 
-API_URL = "http://localhost:8000"
+API_URL = "https://cogen-40t4.onrender.com"
 
 # ══════════════════════════════════════════════════════════════
 # HERO
