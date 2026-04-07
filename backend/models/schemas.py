@@ -1,5 +1,5 @@
 """
-Pydantic data models / schemas for the content factory pipeline.
+Pydantic data models / schemas for the CogenLab pipeline.
 """
 
 from enum import Enum

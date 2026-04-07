@@ -9,7 +9,7 @@ load_dotenv()
 
 
 class Settings:
-    """Central configuration for the Autonomous Content Factory."""
+    """Central configuration for CogenLab."""
 
     # ── LLM Provider ──
     LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "nvidia")

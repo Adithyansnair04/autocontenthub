@@ -1,6 +1,6 @@
-# Autonomous Content Factory
+# CogenLab
 
-A multi-agent AI pipeline that transforms source material (text or URLs) into platform-ready, brand-aligned content. The system leverages specialized AI agents to analyze brand styles, extract facts, identify industry trends, draft content for multiple platforms, and autonomously review and revise the output. It features a FastAPI backend and a sleek, minimalist Streamlit frontend.
+**CogenLab** — A multi-agent AI pipeline that transforms source material (text or URLs) into platform-ready, brand-aligned content. The system leverages specialized AI agents to analyze brand styles, extract facts, identify industry trends, draft content for multiple platforms, and autonomously review and revise the output. It features a FastAPI backend and a sleek, minimalist Streamlit frontend.
 
 ## 🚀 Key Features
 

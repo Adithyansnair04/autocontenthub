@@ -24,9 +24,9 @@ Return ONLY valid JSON:
 {
     "industry_trends": ["specific trend 1", "specific trend 2", ...],
     "platform_trends": {
-        "linkedin": ["what's working on LinkedIn right now"],
-        "twitter": ["what's working on X/Twitter right now"],
-        "blog": ["what's working in long-form blog content right now"],
+        "linkedin": ["what's working on LinkedIn right now,acquire it by analyzing recent linkedin posts"],
+        "twitter": ["what's working on X/Twitter right now,acquire it by analyzing recent tweets"],
+        "blog": ["what's working in long-form blog content right now,acquire it by analyzing recent blogpost"],
         "email": ["what's working in email right now"]
     },
     "dominant_tensions": ["key industry anxiety or debate 1", "key industry anxiety or debate 2", ...],

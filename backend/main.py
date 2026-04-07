@@ -1,5 +1,5 @@
 """
-FastAPI backend for the Autonomous Content Factory.
+FastAPI backend for CogenLab.
 """
 
 from fastapi import FastAPI, HTTPException
@@ -9,7 +9,7 @@ from backend.models.schemas import CampaignRequest, CampaignResult
 from backend.services.orchestrator import run_campaign
 
 app = FastAPI(
-    title="Autonomous Content Factory",
+    title="CogenLab",
     description="Multi-agent AI pipeline that transforms source material into platform-ready content",
     version="1.0.0",
 )
@@ -27,7 +27,7 @@ app.add_middleware(
 @app.get("/")
 async def root():
     return {
-        "service": "Autonomous Content Factory",
+        "service": "CogenLab",
         "status": "running",
         "docs": "/docs",
     }
@@ -40,7 +40,7 @@ async def health():
 
 @app.post("/api/campaign", response_model=CampaignResult)
 async def create_campaign(request: CampaignRequest):
-    """Run the full content factory pipeline."""
+    """Run the full CogenLab pipeline."""
     if not request.source_text.strip() and not request.source_url:
         raise HTTPException(
             status_code=400,

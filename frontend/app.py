@@ -1,5 +1,5 @@
 """
-Streamlit Frontend — Autonomous Content Factory
+Streamlit Frontend — CogenLab
 """
 
 import streamlit as st
@@ -7,7 +7,7 @@ import requests
 import json
 
 st.set_page_config(
-    page_title="Content Factory",
+    page_title="CogenLab",
     page_icon="⚡",
     layout="wide",
     # initial_sidebar_state="collapsed"  # Removed sidebar configuration
@@ -181,21 +181,105 @@ div[data-testid="stExpander"] summary {
     font-weight: 500;
 }
 
-/* ── Agent log cards ── */
-.agent-card {
-    background: rgba(255,255,255,0.03);
-    border-left: 2px solid rgba(255,255,255,0.12);
-    border-radius: 0 10px 10px 0;
-    padding: 10px 14px;
-    margin: 6px 0;
-    font-size: 0.82rem;
+/* ── Agent timeline ── */
+@keyframes timeline-fade {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
-.agent-brand      { border-left-color: #a78bfa; }
-.agent-researcher { border-left-color: #60a5fa; }
-.agent-trend      { border-left-color: #f472b6; }
-.agent-copywriter { border-left-color: #34d399; }
-.agent-editor     { border-left-color: #fbbf24; }
-.agent-system     { border-left-color: rgba(255,255,255,0.20); }
+.timeline-wrap {
+    position: relative;
+    padding-left: 28px;
+    margin: 8px 0 16px;
+}
+.timeline-wrap::before {
+    content: '';
+    position: absolute;
+    left: 7px;
+    top: 4px;
+    bottom: 4px;
+    width: 1px;
+    background: rgba(255,255,255,0.08);
+}
+.tl-entry {
+    position: relative;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 7px 0;
+    animation: timeline-fade 0.35s ease both;
+}
+.tl-entry + .tl-entry { border-top: 1px solid rgba(255,255,255,0.03); }
+.tl-dot {
+    position: absolute;
+    left: -24px;
+    top: 13px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    flex-shrink: 0;
+    box-shadow: 0 0 6px rgba(255,255,255,0.05);
+}
+.tl-dot.c-brand      { background: #a78bfa; box-shadow: 0 0 8px rgba(167,139,250,0.3); }
+.tl-dot.c-researcher { background: #60a5fa; box-shadow: 0 0 8px rgba(96,165,250,0.3); }
+.tl-dot.c-trend      { background: #f472b6; box-shadow: 0 0 8px rgba(244,114,182,0.3); }
+.tl-dot.c-copywriter { background: #34d399; box-shadow: 0 0 8px rgba(52,211,153,0.3); }
+.tl-dot.c-editor     { background: #fbbf24; box-shadow: 0 0 8px rgba(251,191,36,0.3); }
+.tl-dot.c-system     { background: rgba(255,255,255,0.35); }
+.tl-agent {
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.75);
+    min-width: 100px;
+    flex-shrink: 0;
+}
+.tl-action {
+    font-size: 0.74rem;
+    font-weight: 500;
+    color: rgba(255,255,255,0.50);
+    min-width: 90px;
+    flex-shrink: 0;
+}
+.tl-msg {
+    font-size: 0.74rem;
+    font-weight: 400;
+    color: rgba(255,255,255,0.32);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.tl-time {
+    font-size: 0.65rem;
+    font-weight: 400;
+    color: rgba(255,255,255,0.15);
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ── Tweet cards ── */
+.tweet-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin: 8px 0;
+    font-size: 0.85rem;
+    line-height: 1.55;
+    color: rgba(255,255,255,0.80);
+    position: relative;
+}
+.tweet-card::before {
+    content: '𝕏';
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.15);
+}
+.tweet-card + .tweet-card {
+    margin-top: -1px;
+}
 
 /* ── Metric box ── */
 .metric-box {
@@ -222,8 +306,16 @@ API_URL = "http://localhost:8000"
 # ══════════════════════════════════════════════════════════════
 # HERO
 # ══════════════════════════════════════════════════════════════
-st.markdown('<div class="hero-eyebrow">Autonomous Content Factory</div>', unsafe_allow_html=True)
-st.markdown('<div class="hero-title">Your brand voice.<br>Every platform.</div>', unsafe_allow_html=True)
+import os
+
+col_logo, col_text = st.columns([1, 8])
+with col_logo:
+    logo_path = os.path.join(os.path.dirname(__file__), "logo.png")
+    if os.path.exists(logo_path):
+        st.image(logo_path)
+with col_text:
+    st.markdown('<div class="hero-eyebrow">CogenLab</div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero-title">Your brand voice.<br>Every platform.</div>', unsafe_allow_html=True)
 
 st.markdown("&nbsp;", unsafe_allow_html=True)
 
@@ -383,20 +475,32 @@ if launch:
     bar.progress(100, text="Done ✓")
 
     with log_container:
-        for log in result.get("agent_logs", []):
-            agent = log.get("agent", "System")
-            if "Brand"    in agent: css = "agent-brand"
-            elif "Research" in agent: css = "agent-researcher"
-            elif "Trend"   in agent: css = "agent-trend"
-            elif "Copy" in agent or "Writ" in agent: css = "agent-copywriter"
-            elif "Editor"  in agent: css = "agent-editor"
-            else: css = "agent-system"
-            st.markdown(
-                f'<div class="agent-card {css}">'
-                f'<strong>{agent}</strong> · {log.get("action","")}'
-                f'<br><span style="color:rgba(255,255,255,0.35)">{log.get("message","")}</span>'
-                f'</div>', unsafe_allow_html=True
-            )
+        agent_logs = result.get("agent_logs", [])
+        if agent_logs:
+            timeline_html = '<div class="timeline-wrap">'
+            for i, log in enumerate(agent_logs):
+                agent = log.get("agent", "System")
+                if "Brand"    in agent: dot_css = "c-brand"
+                elif "Research" in agent: dot_css = "c-researcher"
+                elif "Trend"   in agent: dot_css = "c-trend"
+                elif "Copy" in agent or "Writ" in agent: dot_css = "c-copywriter"
+                elif "Editor"  in agent: dot_css = "c-editor"
+                else: dot_css = "c-system"
+                action = log.get("action", "")
+                message = log.get("message", "")
+                ts = log.get("timestamp", "")
+                delay = f"animation-delay: {i * 0.04}s;"
+                timeline_html += (
+                    f'<div class="tl-entry" style="{delay}">'
+                    f'  <div class="tl-dot {dot_css}"></div>'
+                    f'  <span class="tl-agent">{agent}</span>'
+                    f'  <span class="tl-action">{action}</span>'
+                    f'  <span class="tl-msg">{message}</span>'
+                    f'  <span class="tl-time">{ts}</span>'
+                    f'</div>'
+                )
+            timeline_html += '</div>'
+            st.markdown(timeline_html, unsafe_allow_html=True)
 
     st.markdown("---")
 
@@ -483,8 +587,11 @@ if launch:
                 if "approved" in status: st.success(status.replace("_"," ").title())
                 else: st.warning(status)
                 if d == "tweet":
+                    tweets_html = ''
                     for tw in [t.strip() for t in content.split("\n\n") if t.strip()]:
-                        st.info(tw)
+                        tweets_html += f'<div class="tweet-card">{tw}</div>'
+                    if tweets_html:
+                        st.markdown(tweets_html, unsafe_allow_html=True)
                 else:
                     st.markdown(content)
                 if piece.get("editor_notes"):

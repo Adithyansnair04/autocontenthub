@@ -1,5 +1,5 @@
 """
-Orchestrator — coordinates all agents in the content factory pipeline.
+Orchestrator — coordinates all agents in the CogenLab pipeline.
 """
 
 import time
@@ -34,7 +34,7 @@ def run_campaign(
     on_log: Optional[Callable[[AgentLog], None]] = None
 ) -> CampaignResult:
     """
-    Run the full content factory pipeline:
+    Run the full CogenLab pipeline:
     1. Brand Analysis (if URL provided)
     2. Source Research & Fact Extraction
     3. Content Generation (for selected domains)
@@ -133,7 +133,13 @@ def run_campaign(
                 review = review_content(piece, fact_sheet, brand_style)
                 verdict = review.get("verdict", "APPROVED")
                 score = review.get("score", 7)
+                if isinstance(score, str):
+                    try: score = int(score)
+                    except ValueError: score = 5
                 correction = review.get("correction_note", "")
+                if isinstance(correction, list):
+                    correction = "\n".join(str(c) for c in correction)
+                correction = str(correction)
 
                 if verdict == "APPROVED" or score >= 9:
                     piece.status = "approved"
