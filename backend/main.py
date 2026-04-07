@@ -5,8 +5,8 @@ FastAPI backend for CogenLab.
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from models.schemas import CampaignRequest, CampaignResult
-from services.orchestrator import run_campaign
+from backend.models.schemas import CampaignRequest, CampaignResult
+from backend.services.orchestrator import run_campaign
 
 app = FastAPI(
     title="CogenLab",
