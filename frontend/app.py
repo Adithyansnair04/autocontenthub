@@ -6,43 +6,53 @@ import streamlit as st
 import requests
 import json
 import os
+import re
 from PIL import Image
 
 icon_path = os.path.join(os.path.dirname(__file__), "logo.png")
 try:
     page_icon = Image.open(icon_path)
 except Exception:
-    page_icon = "⚡"
+    page_icon = "C"
 
 st.set_page_config(
     page_title="CogenLab",
     page_icon=page_icon,
     layout="wide",
-    # initial_sidebar_state="collapsed"  # Removed sidebar configuration
 )
 
-# ══════════════════════════════════════════════════════════════
-# STYLES
-# ══════════════════════════════════════════════════════════════
+def strip_emoji(text):
+    if not isinstance(text, str):
+        return text
+    return re.sub(
+        r'[\U00010000-\U0010ffff'
+        r'\U0001F600-\U0001F64F'
+        r'\U0001F300-\U0001F5FF'
+        r'\U0001F680-\U0001F6FF'
+        r'\U0001F1E0-\U0001F1FF'
+        r'\U00002700-\U000027BF'
+        r'\U000024C2-\U0001F251'
+        r'\u2600-\u26FF'
+        r'\u2700-\u27BF'
+        r']+',
+        '',
+        text
+    ).strip()
+
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 *, *::before, *::after { box-sizing: border-box; font-family: 'Inter', sans-serif; }
 
-/* ── App bg ── */
 .stApp {
     background: #08090d;
     color: #f0f0f0;
 }
 
-/* ── Hide Streamlit chrome ── */
 #MainMenu, footer, header { visibility: hidden; }
 .block-container { padding-top: 2.4rem !important; padding-bottom: 3rem !important; }
 
-/* --- REMOVED ALL SIDEBAR/HAMBURGER RELATED CSS --- */
-
-/* ── Main header ── */
 .hero-eyebrow {
     font-size: 0.70rem;
     font-weight: 600;
@@ -50,7 +60,6 @@ st.markdown("""
     text-transform: uppercase;
     color: rgba(255,255,255,0.30);
     margin-bottom: 10px;
-    /* margin-left: 54px;  -- Removed as no hamburger icon present */
 }
 .hero-title {
     font-size: 2.6rem;
@@ -70,7 +79,6 @@ st.markdown("""
     margin-bottom: 0;
 }
 
-/* ── Section label ── */
 .field-label {
     font-size: 0.68rem;
     font-weight: 600;
@@ -81,7 +89,6 @@ st.markdown("""
     margin-top: 20px;
 }
 
-/* ── Inputs ── */
 div[data-testid="stTextArea"] textarea,
 div[data-testid="stTextInput"] input {
     background: rgba(255,255,255,0.04) !important;
@@ -104,7 +111,6 @@ div[data-testid="stSelectbox"] > div {
 .stRadio > div { gap: 12px !important; }
 .stRadio label { font-size: 0.85rem !important; color: rgba(255,255,255,0.65) !important; }
 
-/* ── Channel cards ── */
 .ch-card {
     background: rgba(255,255,255,0.04);
     border: 1px solid rgba(255,255,255,0.09);
@@ -129,10 +135,8 @@ div[data-testid="stSelectbox"] > div {
 .stCheckbox { justify-content: center !important; }
 .stCheckbox label { font-size: 0 !important; width: 20px; height: 20px; }
 
-/* ── Divider ── */
 hr { border-color: rgba(255,255,255,0.07) !important; margin: 1.8rem 0 !important; }
 
-/* ── Launch button ── */
 .stButton > button {
     background: #ffffff !important;
     color: #08090d !important;
@@ -151,7 +155,6 @@ hr { border-color: rgba(255,255,255,0.07) !important; margin: 1.8rem 0 !importan
     box-shadow: 0 8px 24px rgba(255,255,255,0.10) !important;
 }
 
-/* ── Expander ── */
 div[data-testid="stExpander"] {
     background: rgba(255,255,255,0.03) !important;
     border: 1px solid rgba(255,255,255,0.08) !important;
@@ -162,7 +165,6 @@ div[data-testid="stExpander"] summary {
     color: rgba(255,255,255,0.50) !important;
 }
 
-/* ── Steps ── */
 .step-row {
     display: flex;
     align-items: flex-start;
@@ -189,7 +191,6 @@ div[data-testid="stExpander"] summary {
     font-weight: 500;
 }
 
-/* ── Agent timeline ── */
 @keyframes timeline-fade {
     from { opacity: 0; transform: translateY(6px); }
     to   { opacity: 1; transform: translateY(0); }
@@ -228,11 +229,11 @@ div[data-testid="stExpander"] summary {
     flex-shrink: 0;
     box-shadow: 0 0 6px rgba(255,255,255,0.05);
 }
-.tl-dot.c-brand      { background: #a78bfa; box-shadow: 0 0 8px rgba(167,139,250,0.3); }
-.tl-dot.c-researcher { background: #60a5fa; box-shadow: 0 0 8px rgba(96,165,250,0.3); }
-.tl-dot.c-trend      { background: #f472b6; box-shadow: 0 0 8px rgba(244,114,182,0.3); }
-.tl-dot.c-copywriter { background: #34d399; box-shadow: 0 0 8px rgba(52,211,153,0.3); }
-.tl-dot.c-editor     { background: #fbbf24; box-shadow: 0 0 8px rgba(251,191,36,0.3); }
+.tl-dot.c-brand      { background: #a78bfa; }
+.tl-dot.c-researcher { background: #60a5fa; }
+.tl-dot.c-trend      { background: #f472b6; }
+.tl-dot.c-copywriter { background: #34d399; }
+.tl-dot.c-editor     { background: #fbbf24; }
 .tl-dot.c-system     { background: rgba(255,255,255,0.35); }
 .tl-agent {
     font-size: 0.74rem;
@@ -265,7 +266,6 @@ div[data-testid="stExpander"] summary {
     font-variant-numeric: tabular-nums;
 }
 
-/* ── Tweet cards ── */
 .tweet-card {
     background: rgba(255,255,255,0.04);
     border: 1px solid rgba(255,255,255,0.08);
@@ -277,19 +277,8 @@ div[data-testid="stExpander"] summary {
     color: rgba(255,255,255,0.80);
     position: relative;
 }
-.tweet-card::before {
-    content: '𝕏';
-    position: absolute;
-    top: 12px;
-    right: 14px;
-    font-size: 0.75rem;
-    color: rgba(255,255,255,0.15);
-}
-.tweet-card + .tweet-card {
-    margin-top: -1px;
-}
+.tweet-card + .tweet-card { margin-top: -1px; }
 
-/* ── Metric box ── */
 .metric-box {
     background: rgba(255,255,255,0.04);
     border: 1px solid rgba(255,255,255,0.08);
@@ -305,17 +294,38 @@ div[data-testid="stExpander"] summary {
 .metric-box h3 { font-size: 0.88rem; font-weight: 600; margin: 0 0 6px; }
 .metric-box p  { font-size: 0.78rem; color: rgba(255,255,255,0.50); margin: 0; }
 .metric-box small { font-size: 0.70rem; color: rgba(255,255,255,0.28); }
+
+.status-approved {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: rgba(52,211,153,0.12);
+    color: #34d399;
+    border: 1px solid rgba(52,211,153,0.25);
+}
+.status-pending {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: rgba(251,191,36,0.10);
+    color: #fbbf24;
+    border: 1px solid rgba(251,191,36,0.22);
+}
 </style>
 """, unsafe_allow_html=True)
 
 
 API_URL = "https://cogen-40t4.onrender.com"
 
-# ══════════════════════════════════════════════════════════════
-# HERO
-# ══════════════════════════════════════════════════════════════
-import os
-
+# ── Header ──
 col_logo, col_text = st.columns([1, 8])
 with col_logo:
     logo_path = os.path.join(os.path.dirname(__file__), "logo.png")
@@ -329,17 +339,15 @@ st.markdown("&nbsp;", unsafe_allow_html=True)
 
 with st.expander("How it works"):
     st.markdown("""
-    <div class="step-row"><div class="step-num">01</div><div class="step-body"><b>Add your source</b> — any text, URL, or doc.</div></div>
-    <div class="step-row"><div class="step-num">02</div><div class="step-body"><b>Set your audience</b> — who this is for.</div></div>
-    <div class="step-row"><div class="step-num">03</div><div class="step-body"><b>Pick channels</b> — LinkedIn, blog, tweets, email.</div></div>
-    <div class="step-row"><div class="step-num">04</div><div class="step-body"><b>Launch</b> — agents run, content ships.</div></div>
+    <div class="step-row"><div class="step-num">01</div><div class="step-body"><b>Add your source</b> — any text, URL, or document.</div></div>
+    <div class="step-row"><div class="step-num">02</div><div class="step-body"><b>Define your audience</b> — specify who this content is for.</div></div>
+    <div class="step-row"><div class="step-num">03</div><div class="step-body"><b>Select channels</b> — LinkedIn, blog, tweets, or email.</div></div>
+    <div class="step-row"><div class="step-num">04</div><div class="step-body"><b>Generate</b> — agents process and deliver ready-to-publish content.</div></div>
     """, unsafe_allow_html=True)
 
 st.markdown("---")
 
-# ══════════════════════════════════════════════════════════════
-# FORM
-# ══════════════════════════════════════════════════════════════
+# ── Input ──
 st.markdown('<div class="field-label">Source Material</div>', unsafe_allow_html=True)
 input_method = st.radio("", ["Paste Text", "Enter URL"], horizontal=True, label_visibility="collapsed")
 
@@ -349,7 +357,7 @@ source_url  = ""
 if input_method == "Paste Text":
     source_text = st.text_area(
         "", height=160,
-        placeholder="Drop your source — product brief, press release, doc, anything…",
+        placeholder="Paste your source material — product brief, press release, article, or any document.",
         label_visibility="collapsed"
     )
 else:
@@ -361,7 +369,7 @@ else:
 col_l, col_r = st.columns(2, gap="large")
 
 with col_l:
-    st.markdown('<div class="field-label">Brand Website <span style="color:rgba(255,255,255,0.15)">· optional</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="field-label">Brand Website <span style="color:rgba(255,255,255,0.15)">— optional</span></div>', unsafe_allow_html=True)
     brand_url = st.text_input(
         "", placeholder="https://your-brand.com",
         key="brand_url", label_visibility="collapsed"
@@ -375,21 +383,21 @@ with col_r:
         "Software Developers": "Engineers aged 25–40 looking for tools that sharpen their craft.",
         "Small Business Owners": "Entrepreneurs running 5–50 person teams who need practical solutions.",
         "Marketing Professionals": "B2B marketing leads responsible for demand generation and content.",
-        "Custom →": "",
+        "Custom": "",
     }
     audience_preset = st.selectbox("", list(audience_presets.keys()), label_visibility="collapsed")
-    if audience_preset == "Custom →":
+    if audience_preset == "Custom":
         target_audience = st.text_area(
             "", height=68,
-            placeholder="Describe your audience…",
+            placeholder="Describe your target audience in detail.",
             label_visibility="collapsed", key="custom_audience"
         )
     else:
         target_audience = audience_presets[audience_preset]
 
+# ── Channels ──
 st.markdown('<div class="field-label">Channels</div>', unsafe_allow_html=True)
 
-# Real SVG brand logos
 _LI_SVG = """<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 72 72' width='36' height='36'>
   <rect width='72' height='72' rx='8' fill='#0A66C2'/>
   <path fill='#fff' d='M21 25a5 5 0 110-10 5 5 0 010 10zm-4 5h8v25h-8V30zm13 0h7.7v3.4h.1c1.1-2 3.7-4 7.6-4 8.1 0 9.6 5.3 9.6 12.2V55H47V43.4c0-2.8-.05-6.4-3.9-6.4-3.9 0-4.5 3-4.5 6.2V55H30V30z'/>
@@ -402,16 +410,11 @@ _X_SVG = """<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 72 72' width='3
 
 _GMAIL_SVG = """<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 72 72' width='36' height='36'>
   <rect width='72' height='72' rx='8' fill='#fff'/>
-  <path fill='#EA4335' d='M12 54V28l24 16 24-16v26H12z'/>
-  <path fill='#FBBC04' d='M12 28l24 16-24-16z' />
-  <path fill='#4285F4' d='M60 28l-24 16 24-16z' />
-  <path fill='#34A853' d='M60 54V28H12v26h48z' fill-opacity='0'/>
-  <path fill='#EA4335' d='M12 23v5l24 16 24-16v-5L36 38 12 23z'/>
-  <rect x='12' y='23' width='48' height='31' rx='0' fill='none'/>
-  <path fill='#C5221F' d='M12 23v4l24 16 24-16v-4L36 37 12 23z' />
+  <path fill='#EA4335' d='M12 23h48l4-4H8l4 4z'/>
   <path fill='#EA4335' d='M12 27v-4l-4-3v34l4 4V27z'/>
   <path fill='#4285F4' d='M60 27v-4l4-3v34l-4 4V27z'/>
-  <path fill='#EA4335' d='M12 23h48l4-4H8l4 4z'/>
+  <path fill='#C5221F' d='M12 23v4l24 16 24-16v-4L36 37 12 23z' />
+  <path fill='#EA4335' d='M12 54V28l24 16 24-16v26H12z'/>
 </svg>"""
 
 _BLOG_SVG = """<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 72 72' width='36' height='36'>
@@ -424,7 +427,7 @@ with ch1:
     st.markdown(f'<div class="ch-card">{_LI_SVG}<div class="ch-name">LinkedIn</div></div>', unsafe_allow_html=True)
     do_linkedin = st.checkbox("LinkedIn", value=True, key="ch_li", label_visibility="collapsed")
 with ch2:
-    st.markdown(f'<div class="ch-card">{_X_SVG}<div class="ch-name">X  /  Twitter</div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="ch-card">{_X_SVG}<div class="ch-name">X / Twitter</div></div>', unsafe_allow_html=True)
     do_tweet = st.checkbox("Tweets", value=True, key="ch_tw", label_visibility="collapsed")
 with ch3:
     st.markdown(f'<div class="ch-card">{_GMAIL_SVG}<div class="ch-name">Email</div></div>', unsafe_allow_html=True)
@@ -437,7 +440,7 @@ st.markdown("&nbsp;", unsafe_allow_html=True)
 launch = st.button("Generate Content", use_container_width=False, type="primary")
 
 # ══════════════════════════════════════════════════════════════
-# RUN
+# GENERATE
 # ══════════════════════════════════════════════════════════════
 if launch:
     selected_domains = []
@@ -447,10 +450,10 @@ if launch:
     if do_email:    selected_domains.append("email")
 
     if not source_text.strip() and not source_url.strip():
-        st.error("Add source material to continue.")
+        st.error("Please provide source material to continue.")
         st.stop()
     if not selected_domains:
-        st.error("Select at least one channel.")
+        st.error("Please select at least one channel.")
         st.stop()
     if not target_audience.strip():
         target_audience = "general professionals"
@@ -466,7 +469,7 @@ if launch:
     st.markdown("---")
     st.markdown('<div class="field-label">Agent Activity</div>', unsafe_allow_html=True)
     log_container = st.container()
-    bar = st.progress(0, text="Starting…")
+    bar = st.progress(0, text="Initialising agents...")
 
     with st.spinner(""):
         try:
@@ -474,30 +477,30 @@ if launch:
             resp.raise_for_status()
             result = resp.json()
         except requests.exceptions.ConnectionError:
-            st.error("Backend unreachable — is the FastAPI server on port 8000?")
+            st.error("Unable to reach the backend service. Please try again shortly.")
             st.stop()
         except Exception as e:
-            st.error(f"Error: {e}")
+            st.error(f"An error occurred: {strip_emoji(str(e))}")
             st.stop()
 
-    bar.progress(100, text="Done ✓")
+    bar.progress(100, text="Complete")
 
     with log_container:
         agent_logs = result.get("agent_logs", [])
         if agent_logs:
             timeline_html = '<div class="timeline-wrap">'
             for i, log in enumerate(agent_logs):
-                agent = log.get("agent", "System")
-                if "Brand"    in agent: dot_css = "c-brand"
+                agent = strip_emoji(log.get("agent", "System"))
+                if "Brand"      in agent: dot_css = "c-brand"
                 elif "Research" in agent: dot_css = "c-researcher"
-                elif "Trend"   in agent: dot_css = "c-trend"
-                elif "Copy" in agent or "Writ" in agent: dot_css = "c-copywriter"
-                elif "Editor"  in agent: dot_css = "c-editor"
+                elif "Trend"    in agent: dot_css = "c-trend"
+                elif "Copy"     in agent or "Writ" in agent: dot_css = "c-copywriter"
+                elif "Editor"   in agent: dot_css = "c-editor"
                 else: dot_css = "c-system"
-                action = log.get("action", "")
-                message = log.get("message", "")
-                ts = log.get("timestamp", "")
-                delay = f"animation-delay: {i * 0.04}s;"
+                action  = strip_emoji(log.get("action", ""))
+                message = strip_emoji(log.get("message", ""))
+                ts      = strip_emoji(log.get("timestamp", ""))
+                delay   = f"animation-delay: {i * 0.04}s;"
                 timeline_html += (
                     f'<div class="tl-entry" style="{delay}">'
                     f'  <div class="tl-dot {dot_css}"></div>'
@@ -512,87 +515,97 @@ if launch:
 
     st.markdown("---")
 
-    # Brand / Fact expanders
+    # ── Brand Analysis ──
     if result.get("brand_style") and result["brand_style"].get("tone"):
         bs = result["brand_style"]
         with st.expander("Brand Analysis"):
             b1, b2 = st.columns(2)
             with b1:
-                st.markdown(f"**Brand** · {bs.get('brand_name','—')}")
-                st.markdown(f"**Tone** · {bs.get('tone','—')}")
+                st.markdown(f"**Brand** — {strip_emoji(bs.get('brand_name','—'))}")
+                st.markdown(f"**Tone** — {strip_emoji(bs.get('tone','—'))}")
             with b2:
                 if bs.get("messaging_themes"):
-                    st.markdown(f"**Themes** · {', '.join(bs['messaging_themes'][:4])}")
+                    themes = ", ".join(strip_emoji(t) for t in bs["messaging_themes"][:4])
+                    st.markdown(f"**Themes** — {themes}")
 
+    # ── Fact Sheet ──
     if result.get("fact_sheet"):
         fs = result["fact_sheet"]
         with st.expander("Fact Sheet"):
-            st.markdown(f"**{fs.get('product_name','—')}** — {fs.get('value_proposition','')}")
+            st.markdown(f"**{strip_emoji(fs.get('product_name','—'))}** — {strip_emoji(fs.get('value_proposition',''))}")
             f1, f2 = st.columns(2)
             with f1:
                 for f in fs.get("core_features", []):
-                    st.markdown(f"· {f}")
+                    st.markdown(f"— {strip_emoji(f)}")
             with f2:
                 for b in fs.get("key_benefits", []):
-                    st.markdown(f"· {b}")
+                    st.markdown(f"— {strip_emoji(b)}")
 
-    # ── Trend Intelligence panel ──
+    # ── Trend Intelligence ──
     if result.get("trend_context"):
         tc = result["trend_context"]
-        with st.expander("Trend Intelligence (used to shape content)"):
+        with st.expander("Trend Intelligence"):
             t1, t2 = st.columns(2)
             with t1:
                 if tc.get("industry_trends"):
                     st.markdown("**Industry Trends**")
                     for t in tc["industry_trends"][:5]:
-                        st.markdown(f"· {t}")
+                        st.markdown(f"— {strip_emoji(t)}")
                 if tc.get("dominant_tensions"):
                     st.markdown("**Audience Tensions**")
                     for t in tc["dominant_tensions"][:3]:
-                        st.markdown(f"· {t}")
+                        st.markdown(f"— {strip_emoji(t)}")
             with t2:
                 if tc.get("content_angles"):
-                    st.markdown("**Fresh Content Angles**")
+                    st.markdown("**Content Angles**")
                     for a in tc["content_angles"][:4]:
-                        st.markdown(f"· {a}")
+                        st.markdown(f"— {strip_emoji(a)}")
                 if tc.get("urgency_signals"):
                     st.markdown("**Urgency Signals**")
                     for u in tc["urgency_signals"][:2]:
-                        st.markdown(f"· {u}")
+                        st.markdown(f"— {strip_emoji(u)}")
             if tc.get("trending_vocabulary"):
-                vocab = " · ".join(tc["trending_vocabulary"][:6])
-                st.caption(f"Trending vocabulary used: {vocab}")
+                vocab = " · ".join(strip_emoji(v) for v in tc["trending_vocabulary"][:6])
+                st.caption(f"Vocabulary signals: {vocab}")
 
-    # Content
-    label_map = {"linkedin": "LinkedIn", "blog": "Blog", "tweet": "Tweets", "email": "Email"}
-
+    # ── Output ──
+    label_map = {"linkedin": "LinkedIn", "blog": "Blog", "tweet": "X / Twitter", "email": "Email"}
     pieces = result.get("content_pieces", [])
+
     if pieces:
         st.markdown('<div class="field-label" style="margin-top:1.8rem">Output</div>', unsafe_allow_html=True)
         mcols = st.columns(len(pieces))
         for i, piece in enumerate(pieces):
-            d = piece.get("domain","unknown")
-            s = piece.get("status","—")
-            dot = "●" if "approved" in s else "○"
+            d = piece.get("domain", "unknown")
+            s = strip_emoji(piece.get("status", "—"))
+            revisions = piece.get("revision_count", 0)
+            approved = "approved" in s
+            status_label = "Approved" if approved else s.replace("_", " ").title()
             with mcols[i]:
                 st.markdown(
                     f'<div class="metric-box">'
-                    f'<h3>{label_map.get(d,d)}</h3>'
-                    f'<p>{dot} {s.replace("_"," ").title()}</p>'
-                    f'<small>{piece.get("revision_count",0)} revision(s)</small>'
+                    f'<h3>{label_map.get(d, d)}</h3>'
+                    f'<p><span class="{"status-approved" if approved else "status-pending"}">{status_label}</span></p>'
+                    f'<small>{revisions} revision{"s" if revisions != 1 else ""}</small>'
                     f'</div>', unsafe_allow_html=True
                 )
 
         st.markdown("&nbsp;", unsafe_allow_html=True)
         cols = st.columns(2) if len(pieces) > 2 else st.columns(len(pieces))
+
         for i, piece in enumerate(pieces):
-            d       = piece.get("domain","unknown")
-            content = piece.get("content","")
-            status  = piece.get("status","—")
+            d       = piece.get("domain", "unknown")
+            content = strip_emoji(piece.get("content", ""))
+            status  = strip_emoji(piece.get("status", "—"))
+            approved = "approved" in status
+
             with cols[i % len(cols)]:
-                st.markdown(f"**{label_map.get(d,d)}**")
-                if "approved" in status: st.success(status.replace("_"," ").title())
-                else: st.warning(status)
+                st.markdown(f"**{label_map.get(d, d)}**")
+                status_label = "Approved" if approved else status.replace("_", " ").title()
+                css_class = "status-approved" if approved else "status-pending"
+                st.markdown(f'<span class="{css_class}">{status_label}</span>', unsafe_allow_html=True)
+                st.markdown("&nbsp;", unsafe_allow_html=True)
+
                 if d == "tweet":
                     tweets_html = ''
                     for tw in [t.strip() for t in content.split("\n\n") if t.strip()]:
@@ -601,36 +614,50 @@ if launch:
                         st.markdown(tweets_html, unsafe_allow_html=True)
                 else:
                     st.markdown(content)
+
                 if piece.get("editor_notes"):
-                    st.caption(f"Editor · {piece['editor_notes']}")
-                st.text_area("", value=content, height=90,
-                             key=f"cp_{d}_{i}", label_visibility="collapsed")
+                    st.caption(f"Editor note — {strip_emoji(piece['editor_notes'])}")
+
+                st.text_area(
+                    "", value=content, height=90,
+                    key=f"cp_{d}_{i}", label_visibility="collapsed"
+                )
 
         st.markdown("---")
+
         export_txt = "\n\n".join(
-            f"{'—'*40}\n{label_map.get(p.get('domain'),'')}\n{'—'*40}\n\n{p.get('content','')}"
+            f"{'—'*40}\n{label_map.get(p.get('domain'), '')}\n{'—'*40}\n\n{strip_emoji(p.get('content', ''))}"
             for p in pieces
         )
         dl1, dl2, _ = st.columns([1, 1, 3])
         with dl1:
-            st.download_button("↓ Text", data=export_txt,
-                               file_name="campaign.txt", mime="text/plain",
-                               use_container_width=True)
+            st.download_button(
+                "Download as Text", data=export_txt,
+                file_name="campaign.txt", mime="text/plain",
+                use_container_width=True
+            )
         with dl2:
-            st.download_button("↓ JSON", data=json.dumps(result, indent=2),
-                               file_name="campaign.json", mime="application/json",
-                               use_container_width=True)
+            st.download_button(
+                "Download as JSON", data=json.dumps(result, indent=2),
+                file_name="campaign.json", mime="application/json",
+                use_container_width=True
+            )
 
+    # ── Source Comparison ──
     if source_text.strip() and pieces:
         st.markdown("---")
-        st.markdown('<div class="field-label">Compare</div>', unsafe_allow_html=True)
+        st.markdown('<div class="field-label">Source Comparison</div>', unsafe_allow_html=True)
         cm1, cm2 = st.columns(2)
         with cm1:
-            st.caption("Source")
+            st.caption("Original Source")
             st.text_area("", source_text[:3000], height=320, label_visibility="collapsed")
         with cm2:
-            domain_sel = st.selectbox("", [p.get("domain") for p in pieces], label_visibility="collapsed")
+            domain_sel = st.selectbox(
+                "", [p.get("domain") for p in pieces],
+                format_func=lambda x: label_map.get(x, x),
+                label_visibility="collapsed"
+            )
             sel = next((p for p in pieces if p.get("domain") == domain_sel), None)
             if sel:
                 st.caption(label_map.get(domain_sel, domain_sel))
-                st.text_area("", sel.get("content",""), height=320, label_visibility="collapsed")
+                st.text_area("", strip_emoji(sel.get("content", "")), height=320, label_visibility="collapsed")
