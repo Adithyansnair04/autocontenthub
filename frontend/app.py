@@ -539,24 +539,24 @@ if launch:
     # ── Trend Intelligence panel ──
     if result.get("trend_context"):
         tc = result["trend_context"]
-        with st.expander("📈 Trend Intelligence (used to shape content)"):
+        with st.expander("Trend Intelligence (used to shape content)"):
             t1, t2 = st.columns(2)
             with t1:
                 if tc.get("industry_trends"):
-                    st.markdown("**🌐 Industry Trends**")
+                    st.markdown("**Industry Trends**")
                     for t in tc["industry_trends"][:5]:
                         st.markdown(f"· {t}")
                 if tc.get("dominant_tensions"):
-                    st.markdown("**⚡ Audience Tensions**")
+                    st.markdown("**Audience Tensions**")
                     for t in tc["dominant_tensions"][:3]:
                         st.markdown(f"· {t}")
             with t2:
                 if tc.get("content_angles"):
-                    st.markdown("**🎯 Fresh Content Angles**")
+                    st.markdown("**Fresh Content Angles**")
                     for a in tc["content_angles"][:4]:
                         st.markdown(f"· {a}")
                 if tc.get("urgency_signals"):
-                    st.markdown("**🚨 Urgency Signals**")
+                    st.markdown("**Urgency Signals**")
                     for u in tc["urgency_signals"][:2]:
                         st.markdown(f"· {u}")
             if tc.get("trending_vocabulary"):
@@ -564,7 +564,6 @@ if launch:
                 st.caption(f"Trending vocabulary used: {vocab}")
 
     # Content
-    icon_map  = {"linkedin": "💼", "blog": "📝", "tweet": "🐦", "email": "📧"}
     label_map = {"linkedin": "LinkedIn", "blog": "Blog", "tweet": "Tweets", "email": "Email"}
 
     pieces = result.get("content_pieces", [])
@@ -578,7 +577,7 @@ if launch:
             with mcols[i]:
                 st.markdown(
                     f'<div class="metric-box">'
-                    f'<h3>{icon_map.get(d,"📄")} {label_map.get(d,d)}</h3>'
+                    f'<h3>{label_map.get(d,d)}</h3>'
                     f'<p>{dot} {s.replace("_"," ").title()}</p>'
                     f'<small>{piece.get("revision_count",0)} revision(s)</small>'
                     f'</div>', unsafe_allow_html=True
@@ -591,7 +590,7 @@ if launch:
             content = piece.get("content","")
             status  = piece.get("status","—")
             with cols[i % len(cols)]:
-                st.markdown(f"**{icon_map.get(d,'📄')} {label_map.get(d,d)}**")
+                st.markdown(f"**{label_map.get(d,d)}**")
                 if "approved" in status: st.success(status.replace("_"," ").title())
                 else: st.warning(status)
                 if d == "tweet":
