@@ -38,6 +38,17 @@ class FactSheet(BaseModel):
     raw_summary: str = ""
 
 
+class TrendContext(BaseModel):
+    """Current industry trends and platform patterns for the copywriter."""
+    industry_trends: list[str] = Field(default_factory=list)
+    platform_trends: dict = Field(default_factory=dict)
+    dominant_tensions: list[str] = Field(default_factory=list)
+    urgency_signals: list[str] = Field(default_factory=list)
+    content_angles: list[str] = Field(default_factory=list)
+    trending_vocabulary: list[str] = Field(default_factory=list)
+    avoid_overused_angles: list[str] = Field(default_factory=list)
+
+
 class ContentPiece(BaseModel):
     """A single piece of generated content."""
     domain: ContentDomain
@@ -72,5 +83,6 @@ class CampaignResult(BaseModel):
     status: str = "running"
     brand_style: Optional[BrandStyle] = None
     fact_sheet: Optional[FactSheet] = None
+    trend_context: Optional[TrendContext] = None
     content_pieces: list[ContentPiece] = Field(default_factory=list)
     agent_logs: list[AgentLog] = Field(default_factory=list)

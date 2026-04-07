@@ -8,10 +8,11 @@ from typing import Callable, Optional
 
 from backend.models.schemas import (
     CampaignRequest, CampaignResult, BrandStyle, FactSheet,
-    ContentPiece, ContentDomain, AgentLog
+    ContentPiece, ContentDomain, AgentLog, TrendContext
 )
 from backend.agents.brand_analyst import analyze_brand
 from backend.agents.researcher import extract_facts
+from backend.agents.trend_analyst import analyze_trends
 from backend.agents.copywriter import generate_content
 from backend.agents.editor import review_content, revise_content
 from backend.services.scraper import scrape_source_url
@@ -98,12 +99,29 @@ def run_campaign(
         return result
 
     # ══════════════════════════════════════════════
+    # PHASE 2.5: Trend Analysis
+    # ══════════════════════════════════════════════
+    log("Trend Analyst", "📈 Analyzing", "Researching current industry trends and platform patterns...")
+    trend_context: TrendContext = None
+    try:
+        trend_context = analyze_trends(fact_sheet, request.target_audience)
+        result.trend_context = trend_context
+        angles_preview = ' | '.join(trend_context.content_angles[:2]) if trend_context.content_angles else "N/A"
+        tensions_preview = ' | '.join(trend_context.dominant_tensions[:2]) if trend_context.dominant_tensions else "N/A"
+        log("Trend Analyst", "✅ Complete",
+            f"Trends identified: {len(trend_context.industry_trends)} industry | "
+            f"Tensions: {tensions_preview} | "
+            f"Fresh angles: {angles_preview}")
+    except Exception as e:
+        log("Trend Analyst", "⚠️ Warning", f"Trend analysis failed: {str(e)}. Proceeding without trend context.")
+
+    # ══════════════════════════════════════════════
     # PHASE 3: Content Generation
     # ══════════════════════════════════════════════
     for domain in request.selected_domains:
-        log("Copywriter", "✍️ Writing", f"Generating {domain.value} content...")
+        log("Copywriter", "✍️ Writing", f"Generating {domain.value} content with trend context...")
         try:
-            piece = generate_content(domain, fact_sheet, brand_style, request.target_audience)
+            piece = generate_content(domain, fact_sheet, brand_style, request.target_audience, trend_context)
             log("Copywriter", "📝 Draft Ready", f"{domain.value} first draft complete ({len(piece.content)} chars)")
 
             # ══════════════════════════════════════
@@ -117,7 +135,7 @@ def run_campaign(
                 score = review.get("score", 7)
                 correction = review.get("correction_note", "")
 
-                if verdict == "APPROVED" or score >= 7:
+                if verdict == "APPROVED" or score >= 9:
                     piece.status = "approved"
                     piece.editor_notes = f"Score: {score}/10. Approved."
                     log("Editor", "✅ Approved",
@@ -125,15 +143,16 @@ def run_campaign(
                     break
                 else:
                     issues = []
-                    if review.get("hallucinations_found"):
-                        issues.append(f"Hallucinations: {', '.join(review['hallucinations_found'][:2])}")
-                    if review.get("tone_issues"):
-                        issues.append(f"Tone: {', '.join(review['tone_issues'][:2])}")
-                    if review.get("originality_issues"):
-                        issues.append(f"Originality: {', '.join(review['originality_issues'][:2])}")
+                    if review.get("has_hallucinations"):
+                        issues.append("Hallucinations")
+                    if review.get("has_tone_issues"):
+                        issues.append("Tone/Voice")
+                    if review.get("has_punchiness_issues"):
+                        issues.append("Originality/Punchiness")
 
+                    issues_text = ", ".join(issues) if issues else "General Quality"
                     log("Editor", "❌ Rejected",
-                        f"{domain.value} rejected (score {score}/10). Issues: {'; '.join(issues)}")
+                        f"{domain.value} rejected (score {score}/10). Issues: {issues_text}")
                     log("Editor", "📋 Correction Note", correction)
                     log("Copywriter", "🔄 Revising", f"Revising {domain.value} based on editor feedback...")
 

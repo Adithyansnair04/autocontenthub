@@ -3,7 +3,6 @@ Streamlit Frontend — Autonomous Content Factory
 """
 
 import streamlit as st
-import streamlit.components.v1 as components
 import requests
 import json
 
@@ -11,9 +10,12 @@ st.set_page_config(
     page_title="Content Factory",
     page_icon="⚡",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    # initial_sidebar_state="collapsed"  # Removed sidebar configuration
 )
 
+# ══════════════════════════════════════════════════════════════
+# STYLES
+# ══════════════════════════════════════════════════════════════
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -30,106 +32,7 @@ st.markdown("""
 #MainMenu, footer, header { visibility: hidden; }
 .block-container { padding-top: 2.4rem !important; padding-bottom: 3rem !important; }
 
-/* ── Sidebar — fixed overlay drawer ── */
-section[data-testid="stSidebar"] {
-    position: fixed !important;
-    left: 0 !important;
-    top: 0 !important;
-    height: 100vh !important;
-    width: 268px !important;
-    z-index: 9998 !important;
-    background: #0c0d12 !important;
-    border-right: 1px solid rgba(255,255,255,0.07) !important;
-    box-shadow: 6px 0 32px rgba(0,0,0,0.55) !important;
-    transform: translateX(-110%) !important;
-    transition: transform 0.28s cubic-bezier(0.4,0,0.2,1) !important;
-    display: flex !important;
-    visibility: visible !important;
-    overflow-y: auto !important;
-}
-/* open state toggled by JS */
-section[data-testid="stSidebar"].sb-open {
-    transform: translateX(0) !important;
-}
-section[data-testid="stSidebar"] > div {
-    padding: 1.8rem 1.4rem !important;
-    width: 100% !important;
-}
-section[data-testid="stSidebar"] * { color: #f0f0f0 !important; }
-
-/* hide Streamlit's own collapse/expand arrow buttons */
-[data-testid="collapsedControl"],
-[data-testid="stSidebarCollapseButton"] { display: none !important; }
-
-/* ── Glowing left-edge trigger strip ── */
-#sb-edge {
-    position: fixed;
-    left: 0; top: 0;
-    width: 5px; height: 100vh;
-    z-index: 9999;
-    background: linear-gradient(to right, rgba(255,255,255,0.09), transparent);
-    transition: width 0.2s, background 0.2s;
-}
-#sb-edge:hover {
-    width: 10px;
-    background: linear-gradient(to right, rgba(255,255,255,0.20), transparent);
-}
-
-/* ── Sidebar branding ── */
-.sb-brand {
-    font-size: 0.70rem;
-    font-weight: 600;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: rgba(255,255,255,0.28) !important;
-    margin-bottom: 1.6rem;
-}
-
-/* ── Agent accordion ── */
-.agent-toggle {
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
-    border-radius: 10px;
-    margin-bottom: 4px;
-    transition: background 0.2s;
-    border: 1px solid transparent;
-    user-select: none;
-}
-.agent-toggle:hover {
-    background: rgba(255,255,255,0.06);
-    border-color: rgba(255,255,255,0.08);
-}
-.agent-icon { font-size: 1rem; }
-.agent-name { font-size: 0.85rem; font-weight: 500; flex: 1; }
-.agent-chevron {
-    font-size: 0.65rem;
-    color: rgba(255,255,255,0.25);
-    transition: transform 0.2s;
-}
-.agent-detail {
-    font-size: 0.76rem;
-    color: rgba(255,255,255,0.45) !important;
-    padding: 0 12px 10px 36px;
-    line-height: 1.55;
-    display: none;
-}
-.agent-group:hover .agent-detail { display: block; }
-.agent-group:hover .agent-chevron { transform: rotate(90deg); }
-
-/* accent dots */
-.dot-brand      { color: #a78bfa !important; }
-.dot-researcher { color: #60a5fa !important; }
-.dot-copywriter { color: #34d399 !important; }
-.dot-editor     { color: #fbbf24 !important; }
-
-.sb-divider {
-    height: 1px;
-    background: rgba(255,255,255,0.06);
-    margin: 1.2rem 0;
-}
+/* --- REMOVED ALL SIDEBAR/HAMBURGER RELATED CSS --- */
 
 /* ── Main header ── */
 .hero-eyebrow {
@@ -139,6 +42,7 @@ section[data-testid="stSidebar"] * { color: #f0f0f0 !important; }
     text-transform: uppercase;
     color: rgba(255,255,255,0.30);
     margin-bottom: 10px;
+    /* margin-left: 54px;  -- Removed as no hamburger icon present */
 }
 .hero-title {
     font-size: 2.6rem;
@@ -214,7 +118,6 @@ div[data-testid="stSelectbox"] > div {
     margin-top: 10px;
     letter-spacing: 0.02em;
 }
-/* hide the checkbox widget itself, just keep its label */
 .stCheckbox { justify-content: center !important; }
 .stCheckbox label { font-size: 0 !important; width: 20px; height: 20px; }
 
@@ -240,15 +143,18 @@ hr { border-color: rgba(255,255,255,0.07) !important; margin: 1.8rem 0 !importan
     box-shadow: 0 8px 24px rgba(255,255,255,0.10) !important;
 }
 
-/* ── Expander (how it works) ── */
+/* ── Expander ── */
 div[data-testid="stExpander"] {
     background: rgba(255,255,255,0.03) !important;
     border: 1px solid rgba(255,255,255,0.08) !important;
     border-radius: 14px !important;
 }
-div[data-testid="stExpander"] summary { font-size: 0.82rem !important; color: rgba(255,255,255,0.50) !important; }
+div[data-testid="stExpander"] summary {
+    font-size: 0.82rem !important;
+    color: rgba(255,255,255,0.50) !important;
+}
 
-/* ── How-it-works steps ── */
+/* ── Steps ── */
 .step-row {
     display: flex;
     align-items: flex-start;
@@ -265,8 +171,15 @@ div[data-testid="stExpander"] summary { font-size: 0.82rem !important; color: rg
     padding-top: 2px;
     flex-shrink: 0;
 }
-.step-body { font-size: 0.83rem; color: rgba(255,255,255,0.55); line-height: 1.55; }
-.step-body b { color: rgba(255,255,255,0.85); font-weight: 500; }
+.step-body {
+    font-size: 0.83rem;
+    color: rgba(255,255,255,0.55);
+    line-height: 1.55;
+}
+.step-body b {
+    color: rgba(255,255,255,0.85);
+    font-weight: 500;
+}
 
 /* ── Agent log cards ── */
 .agent-card {
@@ -279,6 +192,7 @@ div[data-testid="stExpander"] summary { font-size: 0.82rem !important; color: rg
 }
 .agent-brand      { border-left-color: #a78bfa; }
 .agent-researcher { border-left-color: #60a5fa; }
+.agent-trend      { border-left-color: #f472b6; }
 .agent-copywriter { border-left-color: #34d399; }
 .agent-editor     { border-left-color: #fbbf24; }
 .agent-system     { border-left-color: rgba(255,255,255,0.20); }
@@ -302,109 +216,8 @@ div[data-testid="stExpander"] summary { font-size: 0.82rem !important; color: rg
 </style>
 """, unsafe_allow_html=True)
 
+
 API_URL = "http://localhost:8000"
-
-# ── Hover-to-reveal sidebar ──
-# Inject the edge-trigger strip + JS via an invisible iframe component.
-# We directly manipulate the sidebar's CSS class — no Streamlit button clicking.
-components.html("""
-<div id="sb-edge"></div>
-<script>
-(function() {
-  if (parent.__sbReady) return;
-  parent.__sbReady = true;
-
-  var EDGE = 40;   // px from left edge to trigger open
-  var cool  = false;
-
-  // Inject the edge strip into the parent document
-  var strip = parent.document.createElement('div');
-  strip.id = 'sb-edge';
-  parent.document.body.appendChild(strip);
-
-  function sidebar() {
-    return parent.document.querySelector('[data-testid="stSidebar"]');
-  }
-  function isOpen() {
-    var sb = sidebar();
-    return sb && sb.classList.contains('sb-open');
-  }
-  function open() {
-    var sb = sidebar();
-    if (sb && !isOpen()) sb.classList.add('sb-open');
-  }
-  function close() {
-    var sb = sidebar();
-    if (sb && isOpen()) sb.classList.remove('sb-open');
-  }
-
-  // Mouse near left edge → open
-  parent.document.addEventListener('mousemove', function(e) {
-    if (cool) return;
-    if (e.clientX < EDGE && !isOpen()) {
-      cool = true;
-      open();
-      setTimeout(function() { cool = false; }, 400);
-    }
-  });
-
-  // Click or mousedown outside sidebar → close
-  parent.document.addEventListener('mousedown', function(e) {
-    if (!isOpen()) return;
-    var sb = sidebar();
-    if (sb && !sb.contains(e.target) && e.target.id !== 'sb-edge') {
-      close();
-    }
-  });
-})();
-</script>
-""", height=0, scrolling=False)
-
-# ══════════════════════════════════════════════════════════════
-# SIDEBAR
-# ══════════════════════════════════════════════════════════════
-with st.sidebar:
-    st.markdown('<div class="sb-brand">Content Factory</div>', unsafe_allow_html=True)
-
-    with st.expander("**AI Agents**", expanded=False):
-        st.markdown("""
-        <div class="agent-group">
-            <div class="agent-toggle">
-                <span class="agent-icon dot-brand">🎨</span>
-                <span class="agent-name">Brand Analyst</span>
-                <span class="agent-chevron">▶</span>
-            </div>
-            <div class="agent-detail">Reads your site. Learns your voice.</div>
-        </div>
-        <div class="agent-group">
-            <div class="agent-toggle">
-                <span class="agent-icon dot-researcher">🔍</span>
-                <span class="agent-name">Researcher</span>
-                <span class="agent-chevron">▶</span>
-            </div>
-            <div class="agent-detail">Extracts facts. Builds the source of truth.</div>
-        </div>
-        <div class="agent-group">
-            <div class="agent-toggle">
-                <span class="agent-icon dot-copywriter">✍️</span>
-                <span class="agent-name">Copywriter</span>
-                <span class="agent-chevron">▶</span>
-            </div>
-            <div class="agent-detail">Writes platform-ready content. Every channel.</div>
-        </div>
-        <div class="agent-group">
-            <div class="agent-toggle">
-                <span class="agent-icon dot-editor">📋</span>
-                <span class="agent-name">Editor</span>
-                <span class="agent-chevron">▶</span>
-            </div>
-            <div class="agent-detail">Checks quality. Sends revisions. Approves.</div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown('<div class="sb-divider"></div>', unsafe_allow_html=True)
-    st.markdown('<div style="font-size:0.70rem;color:rgba(255,255,255,0.18);">v 1.0.0</div>', unsafe_allow_html=True)
-
 
 # ══════════════════════════════════════════════════════════════
 # HERO
@@ -574,6 +387,7 @@ if launch:
             agent = log.get("agent", "System")
             if "Brand"    in agent: css = "agent-brand"
             elif "Research" in agent: css = "agent-researcher"
+            elif "Trend"   in agent: css = "agent-trend"
             elif "Copy" in agent or "Writ" in agent: css = "agent-copywriter"
             elif "Editor"  in agent: css = "agent-editor"
             else: css = "agent-system"
@@ -609,6 +423,33 @@ if launch:
             with f2:
                 for b in fs.get("key_benefits", []):
                     st.markdown(f"· {b}")
+
+    # ── Trend Intelligence panel ──
+    if result.get("trend_context"):
+        tc = result["trend_context"]
+        with st.expander("📈 Trend Intelligence (used to shape content)"):
+            t1, t2 = st.columns(2)
+            with t1:
+                if tc.get("industry_trends"):
+                    st.markdown("**🌐 Industry Trends**")
+                    for t in tc["industry_trends"][:5]:
+                        st.markdown(f"· {t}")
+                if tc.get("dominant_tensions"):
+                    st.markdown("**⚡ Audience Tensions**")
+                    for t in tc["dominant_tensions"][:3]:
+                        st.markdown(f"· {t}")
+            with t2:
+                if tc.get("content_angles"):
+                    st.markdown("**🎯 Fresh Content Angles**")
+                    for a in tc["content_angles"][:4]:
+                        st.markdown(f"· {a}")
+                if tc.get("urgency_signals"):
+                    st.markdown("**🚨 Urgency Signals**")
+                    for u in tc["urgency_signals"][:2]:
+                        st.markdown(f"· {u}")
+            if tc.get("trending_vocabulary"):
+                vocab = " · ".join(tc["trending_vocabulary"][:6])
+                st.caption(f"Trending vocabulary used: {vocab}")
 
     # Content
     icon_map  = {"linkedin": "💼", "blog": "📝", "tweet": "🐦", "email": "📧"}
