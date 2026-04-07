@@ -1,5 +1,7 @@
 # CogenLab
 
+**Deployed Link:** [https://cogenlab.streamlit.app/](https://cogenlab.streamlit.app/)
+
 ## The Problem
 Creating, repurposing, and formatting content for varied digital platforms (like LinkedIn, X/Twitter, and Emails) is incredibly time-consuming. Maintaining a consistent brand voice across all mediums while ensuring the content feels timely usually requires significant manual editorial effort.
 
