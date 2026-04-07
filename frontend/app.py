@@ -5,10 +5,18 @@ Streamlit Frontend — CogenLab
 import streamlit as st
 import requests
 import json
+import os
+from PIL import Image
+
+icon_path = os.path.join(os.path.dirname(__file__), "logo.png")
+try:
+    page_icon = Image.open(icon_path)
+except Exception:
+    page_icon = "⚡"
 
 st.set_page_config(
     page_title="CogenLab",
-    page_icon="⚡",
+    page_icon=page_icon,
     layout="wide",
     # initial_sidebar_state="collapsed"  # Removed sidebar configuration
 )
@@ -315,7 +323,7 @@ with col_logo:
         st.image(logo_path)
 with col_text:
     st.markdown('<div class="hero-eyebrow">CogenLab</div>', unsafe_allow_html=True)
-    st.markdown('<div class="hero-title">Your brand voice.<br>Every platform.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero-title">From Noise to Narrative.<br>The CogenWay</div>', unsafe_allow_html=True)
 
 st.markdown("&nbsp;", unsafe_allow_html=True)
 
