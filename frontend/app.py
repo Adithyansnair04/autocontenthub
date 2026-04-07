@@ -1,457 +1,681 @@
 """
-Streamlit Frontend — Autonomous Content Factory Dashboard
+Streamlit Frontend — Autonomous Content Factory
 """
 
 import streamlit as st
+import streamlit.components.v1 as components
 import requests
 import json
-import time
 
 st.set_page_config(
-    page_title="Autonomous Content Factory",
-    page_icon="🏭",
+    page_title="Content Factory",
+    page_icon="⚡",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
-# ── Custom CSS ──
 st.markdown("""
 <style>
-    .main-header {
-        font-size: 2.5rem;
-        font-weight: 800;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-bottom: 0;
-    }
-    .sub-header {
-        font-size: 1.1rem;
-        color: #6b7280;
-        margin-top: -10px;
-        margin-bottom: 30px;
-    }
-    .agent-card {
-        background: #f8f9fa;
-        border-radius: 12px;
-        padding: 16px;
-        margin: 8px 0;
-        border-left: 4px solid;
-    }
-    .agent-researcher { border-left-color: #3b82f6; }
-    .agent-copywriter { border-left-color: #10b981; }
-    .agent-editor { border-left-color: #f59e0b; }
-    .agent-brand { border-left-color: #8b5cf6; }
-    .agent-system { border-left-color: #6b7280; }
-    .content-card {
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 12px;
-        padding: 20px;
-        margin: 12px 0;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    .status-approved { color: #10b981; font-weight: bold; }
-    .status-rejected { color: #ef4444; font-weight: bold; }
-    .status-draft { color: #f59e0b; font-weight: bold; }
-    .metric-box {
-        background: linear-gradient(135deg, #667eea20, #764ba220);
-        border-radius: 8px;
-        padding: 12px;
-        text-align: center;
-    }
-    div[data-testid="stExpander"] {
-        border: 1px solid #e5e7eb;
-        border-radius: 12px;
-        margin-bottom: 8px;
-    }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+
+/* ── App bg ── */
+.stApp {
+    background: #08090d;
+    color: #f0f0f0;
+}
+
+/* ── Hide Streamlit chrome ── */
+#MainMenu, footer, header { visibility: hidden; }
+.block-container { padding-top: 2.4rem !important; padding-bottom: 3rem !important; }
+
+/* ── Sidebar — fixed overlay drawer ── */
+section[data-testid="stSidebar"] {
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    height: 100vh !important;
+    width: 268px !important;
+    z-index: 9998 !important;
+    background: #0c0d12 !important;
+    border-right: 1px solid rgba(255,255,255,0.07) !important;
+    box-shadow: 6px 0 32px rgba(0,0,0,0.55) !important;
+    transform: translateX(-110%) !important;
+    transition: transform 0.28s cubic-bezier(0.4,0,0.2,1) !important;
+    display: flex !important;
+    visibility: visible !important;
+    overflow-y: auto !important;
+}
+/* open state toggled by JS */
+section[data-testid="stSidebar"].sb-open {
+    transform: translateX(0) !important;
+}
+section[data-testid="stSidebar"] > div {
+    padding: 1.8rem 1.4rem !important;
+    width: 100% !important;
+}
+section[data-testid="stSidebar"] * { color: #f0f0f0 !important; }
+
+/* hide Streamlit's own collapse/expand arrow buttons */
+[data-testid="collapsedControl"],
+[data-testid="stSidebarCollapseButton"] { display: none !important; }
+
+/* ── Glowing left-edge trigger strip ── */
+#sb-edge {
+    position: fixed;
+    left: 0; top: 0;
+    width: 5px; height: 100vh;
+    z-index: 9999;
+    background: linear-gradient(to right, rgba(255,255,255,0.09), transparent);
+    transition: width 0.2s, background 0.2s;
+}
+#sb-edge:hover {
+    width: 10px;
+    background: linear-gradient(to right, rgba(255,255,255,0.20), transparent);
+}
+
+/* ── Sidebar branding ── */
+.sb-brand {
+    font-size: 0.70rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.28) !important;
+    margin-bottom: 1.6rem;
+}
+
+/* ── Agent accordion ── */
+.agent-toggle {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    margin-bottom: 4px;
+    transition: background 0.2s;
+    border: 1px solid transparent;
+    user-select: none;
+}
+.agent-toggle:hover {
+    background: rgba(255,255,255,0.06);
+    border-color: rgba(255,255,255,0.08);
+}
+.agent-icon { font-size: 1rem; }
+.agent-name { font-size: 0.85rem; font-weight: 500; flex: 1; }
+.agent-chevron {
+    font-size: 0.65rem;
+    color: rgba(255,255,255,0.25);
+    transition: transform 0.2s;
+}
+.agent-detail {
+    font-size: 0.76rem;
+    color: rgba(255,255,255,0.45) !important;
+    padding: 0 12px 10px 36px;
+    line-height: 1.55;
+    display: none;
+}
+.agent-group:hover .agent-detail { display: block; }
+.agent-group:hover .agent-chevron { transform: rotate(90deg); }
+
+/* accent dots */
+.dot-brand      { color: #a78bfa !important; }
+.dot-researcher { color: #60a5fa !important; }
+.dot-copywriter { color: #34d399 !important; }
+.dot-editor     { color: #fbbf24 !important; }
+
+.sb-divider {
+    height: 1px;
+    background: rgba(255,255,255,0.06);
+    margin: 1.2rem 0;
+}
+
+/* ── Main header ── */
+.hero-eyebrow {
+    font-size: 0.70rem;
+    font-weight: 600;
+    letter-spacing: 0.20em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.30);
+    margin-bottom: 10px;
+}
+.hero-title {
+    font-size: 2.6rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.12;
+    background: linear-gradient(110deg, #ffffff 30%, rgba(255,255,255,0.45));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 10px;
+}
+.hero-sub {
+    font-size: 0.95rem;
+    font-weight: 400;
+    color: rgba(255,255,255,0.40);
+    letter-spacing: 0.01em;
+    margin-bottom: 0;
+}
+
+/* ── Section label ── */
+.field-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.30);
+    margin-bottom: 6px;
+    margin-top: 20px;
+}
+
+/* ── Inputs ── */
+div[data-testid="stTextArea"] textarea,
+div[data-testid="stTextInput"] input {
+    background: rgba(255,255,255,0.04) !important;
+    color: #f0f0f0 !important;
+    border: 1px solid rgba(255,255,255,0.10) !important;
+    border-radius: 12px !important;
+    font-size: 0.88rem !important;
+    transition: border-color 0.2s;
+}
+div[data-testid="stTextArea"] textarea:focus,
+div[data-testid="stTextInput"] input:focus {
+    border-color: rgba(255,255,255,0.26) !important;
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.04) !important;
+}
+div[data-testid="stSelectbox"] > div {
+    background: rgba(255,255,255,0.04) !important;
+    border: 1px solid rgba(255,255,255,0.10) !important;
+    border-radius: 12px !important;
+}
+.stRadio > div { gap: 12px !important; }
+.stRadio label { font-size: 0.85rem !important; color: rgba(255,255,255,0.65) !important; }
+
+/* ── Channel cards ── */
+.ch-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 14px;
+    padding: 18px 14px 14px;
+    text-align: center;
+    transition: all 0.22s ease;
+    cursor: pointer;
+}
+.ch-card:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.18);
+    transform: translateY(-2px);
+}
+.ch-card .ch-name {
+    font-size: 0.80rem;
+    font-weight: 500;
+    color: rgba(255,255,255,0.75);
+    margin-top: 10px;
+    letter-spacing: 0.02em;
+}
+/* hide the checkbox widget itself, just keep its label */
+.stCheckbox { justify-content: center !important; }
+.stCheckbox label { font-size: 0 !important; width: 20px; height: 20px; }
+
+/* ── Divider ── */
+hr { border-color: rgba(255,255,255,0.07) !important; margin: 1.8rem 0 !important; }
+
+/* ── Launch button ── */
+.stButton > button {
+    background: #ffffff !important;
+    color: #08090d !important;
+    border: none !important;
+    border-radius: 12px !important;
+    font-weight: 600 !important;
+    font-size: 0.90rem !important;
+    letter-spacing: 0.01em !important;
+    padding: 13px !important;
+    transition: all 0.22s ease !important;
+    box-shadow: 0 0 0 0 rgba(255,255,255,0);
+}
+.stButton > button:hover {
+    background: #e8e8e8 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(255,255,255,0.10) !important;
+}
+
+/* ── Expander (how it works) ── */
+div[data-testid="stExpander"] {
+    background: rgba(255,255,255,0.03) !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
+    border-radius: 14px !important;
+}
+div[data-testid="stExpander"] summary { font-size: 0.82rem !important; color: rgba(255,255,255,0.50) !important; }
+
+/* ── How-it-works steps ── */
+.step-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.step-row:last-child { border-bottom: none; }
+.step-num {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: rgba(255,255,255,0.20);
+    width: 18px;
+    padding-top: 2px;
+    flex-shrink: 0;
+}
+.step-body { font-size: 0.83rem; color: rgba(255,255,255,0.55); line-height: 1.55; }
+.step-body b { color: rgba(255,255,255,0.85); font-weight: 500; }
+
+/* ── Agent log cards ── */
+.agent-card {
+    background: rgba(255,255,255,0.03);
+    border-left: 2px solid rgba(255,255,255,0.12);
+    border-radius: 0 10px 10px 0;
+    padding: 10px 14px;
+    margin: 6px 0;
+    font-size: 0.82rem;
+}
+.agent-brand      { border-left-color: #a78bfa; }
+.agent-researcher { border-left-color: #60a5fa; }
+.agent-copywriter { border-left-color: #34d399; }
+.agent-editor     { border-left-color: #fbbf24; }
+.agent-system     { border-left-color: rgba(255,255,255,0.20); }
+
+/* ── Metric box ── */
+.metric-box {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 18px 12px;
+    text-align: center;
+    transition: all 0.22s ease;
+}
+.metric-box:hover {
+    background: rgba(255,255,255,0.07);
+    transform: translateY(-3px);
+}
+.metric-box h3 { font-size: 0.88rem; font-weight: 600; margin: 0 0 6px; }
+.metric-box p  { font-size: 0.78rem; color: rgba(255,255,255,0.50); margin: 0; }
+.metric-box small { font-size: 0.70rem; color: rgba(255,255,255,0.28); }
 </style>
 """, unsafe_allow_html=True)
 
 API_URL = "http://localhost:8000"
 
-# ── Sidebar — Inputs ──
+# ── Hover-to-reveal sidebar ──
+# Inject the edge-trigger strip + JS via an invisible iframe component.
+# We directly manipulate the sidebar's CSS class — no Streamlit button clicking.
+components.html("""
+<div id="sb-edge"></div>
+<script>
+(function() {
+  if (parent.__sbReady) return;
+  parent.__sbReady = true;
+
+  var EDGE = 40;   // px from left edge to trigger open
+  var cool  = false;
+
+  // Inject the edge strip into the parent document
+  var strip = parent.document.createElement('div');
+  strip.id = 'sb-edge';
+  parent.document.body.appendChild(strip);
+
+  function sidebar() {
+    return parent.document.querySelector('[data-testid="stSidebar"]');
+  }
+  function isOpen() {
+    var sb = sidebar();
+    return sb && sb.classList.contains('sb-open');
+  }
+  function open() {
+    var sb = sidebar();
+    if (sb && !isOpen()) sb.classList.add('sb-open');
+  }
+  function close() {
+    var sb = sidebar();
+    if (sb && isOpen()) sb.classList.remove('sb-open');
+  }
+
+  // Mouse near left edge → open
+  parent.document.addEventListener('mousemove', function(e) {
+    if (cool) return;
+    if (e.clientX < EDGE && !isOpen()) {
+      cool = true;
+      open();
+      setTimeout(function() { cool = false; }, 400);
+    }
+  });
+
+  // Click or mousedown outside sidebar → close
+  parent.document.addEventListener('mousedown', function(e) {
+    if (!isOpen()) return;
+    var sb = sidebar();
+    if (sb && !sb.contains(e.target) && e.target.id !== 'sb-edge') {
+      close();
+    }
+  });
+})();
+</script>
+""", height=0, scrolling=False)
+
+# ══════════════════════════════════════════════════════════════
+# SIDEBAR
+# ══════════════════════════════════════════════════════════════
 with st.sidebar:
-    st.markdown("## ⚙️ Campaign Configuration")
-    st.markdown("---")
+    st.markdown('<div class="sb-brand">Content Factory</div>', unsafe_allow_html=True)
 
-    # Source Material
-    st.markdown("### 📄 Source Material")
-    input_method = st.radio("Input method:", ["Paste Text", "Enter URL"], horizontal=True)
+    with st.expander("**AI Agents**", expanded=False):
+        st.markdown("""
+        <div class="agent-group">
+            <div class="agent-toggle">
+                <span class="agent-icon dot-brand">🎨</span>
+                <span class="agent-name">Brand Analyst</span>
+                <span class="agent-chevron">▶</span>
+            </div>
+            <div class="agent-detail">Reads your site. Learns your voice.</div>
+        </div>
+        <div class="agent-group">
+            <div class="agent-toggle">
+                <span class="agent-icon dot-researcher">🔍</span>
+                <span class="agent-name">Researcher</span>
+                <span class="agent-chevron">▶</span>
+            </div>
+            <div class="agent-detail">Extracts facts. Builds the source of truth.</div>
+        </div>
+        <div class="agent-group">
+            <div class="agent-toggle">
+                <span class="agent-icon dot-copywriter">✍️</span>
+                <span class="agent-name">Copywriter</span>
+                <span class="agent-chevron">▶</span>
+            </div>
+            <div class="agent-detail">Writes platform-ready content. Every channel.</div>
+        </div>
+        <div class="agent-group">
+            <div class="agent-toggle">
+                <span class="agent-icon dot-editor">📋</span>
+                <span class="agent-name">Editor</span>
+                <span class="agent-chevron">▶</span>
+            </div>
+            <div class="agent-detail">Checks quality. Sends revisions. Approves.</div>
+        </div>
+        """, unsafe_allow_html=True)
 
-    source_text = ""
-    source_url = ""
+    st.markdown('<div class="sb-divider"></div>', unsafe_allow_html=True)
+    st.markdown('<div style="font-size:0.70rem;color:rgba(255,255,255,0.18);">v 1.0.0</div>', unsafe_allow_html=True)
 
-    if input_method == "Paste Text":
-        source_text = st.text_area(
-            "Paste your source document:",
-            height=200,
-            placeholder="Paste your product description, technical document, press release, or any source material here..."
-        )
-    else:
-        source_url = st.text_input(
-            "Source document URL:",
-            placeholder="https://example.com/product-announcement"
-        )
 
-    st.markdown("---")
+# ══════════════════════════════════════════════════════════════
+# HERO
+# ══════════════════════════════════════════════════════════════
+st.markdown('<div class="hero-eyebrow">Autonomous Content Factory</div>', unsafe_allow_html=True)
+st.markdown('<div class="hero-title">Your brand voice.<br>Every platform.</div>', unsafe_allow_html=True)
 
-    # NEW FEATURE 1: Brand URL
-    st.markdown("### 🎨 Brand Style")
-    brand_url = st.text_input(
-        "Brand website URL (optional):",
-        placeholder="https://your-brand.com",
-        help="We'll analyze your website to match your brand's tone and voice"
+st.markdown("&nbsp;", unsafe_allow_html=True)
+
+with st.expander("How it works"):
+    st.markdown("""
+    <div class="step-row"><div class="step-num">01</div><div class="step-body"><b>Add your source</b> — any text, URL, or doc.</div></div>
+    <div class="step-row"><div class="step-num">02</div><div class="step-body"><b>Set your audience</b> — who this is for.</div></div>
+    <div class="step-row"><div class="step-num">03</div><div class="step-body"><b>Pick channels</b> — LinkedIn, blog, tweets, email.</div></div>
+    <div class="step-row"><div class="step-num">04</div><div class="step-body"><b>Launch</b> — agents run, content ships.</div></div>
+    """, unsafe_allow_html=True)
+
+st.markdown("---")
+
+# ══════════════════════════════════════════════════════════════
+# FORM
+# ══════════════════════════════════════════════════════════════
+st.markdown('<div class="field-label">Source Material</div>', unsafe_allow_html=True)
+input_method = st.radio("", ["Paste Text", "Enter URL"], horizontal=True, label_visibility="collapsed")
+
+source_text = ""
+source_url  = ""
+
+if input_method == "Paste Text":
+    source_text = st.text_area(
+        "", height=160,
+        placeholder="Drop your source — product brief, press release, doc, anything…",
+        label_visibility="collapsed"
+    )
+else:
+    source_url = st.text_input(
+        "", placeholder="https://example.com/announcement",
+        label_visibility="collapsed"
     )
 
-    st.markdown("---")
+col_l, col_r = st.columns(2, gap="large")
 
-    # NEW FEATURE 2: Target Audience
-    st.markdown("### 🎯 Target Audience")
+with col_l:
+    st.markdown('<div class="field-label">Brand Website <span style="color:rgba(255,255,255,0.15)">· optional</span></div>', unsafe_allow_html=True)
+    brand_url = st.text_input(
+        "", placeholder="https://your-brand.com",
+        key="brand_url", label_visibility="collapsed"
+    )
+
+with col_r:
+    st.markdown('<div class="field-label">Target Audience</div>', unsafe_allow_html=True)
     audience_presets = {
-        "Custom": "",
-        "Tech Decision Makers (CTOs, VPs)": "C-level technology executives and VP-level decision makers at mid-to-large enterprises who evaluate and procure technology solutions",
-        "Software Developers": "Software developers and engineers aged 25-40 who actively seek tools to improve their workflow and code quality",
-        "Small Business Owners": "Small business owners and entrepreneurs running businesses with 5-50 employees who need practical, cost-effective solutions",
-        "Marketing Professionals": "Marketing managers and directors at B2B companies responsible for demand generation and content strategy",
-        "General Professionals": "Working professionals across industries who want to stay current with technology and business trends",
+        "General Professionals": "Working professionals who want to stay current with business and technology trends.",
+        "Tech Decision Makers": "C-level and VP-level technology leaders evaluating enterprise solutions.",
+        "Software Developers": "Engineers aged 25–40 looking for tools that sharpen their craft.",
+        "Small Business Owners": "Entrepreneurs running 5–50 person teams who need practical solutions.",
+        "Marketing Professionals": "B2B marketing leads responsible for demand generation and content.",
+        "Custom →": "",
     }
-
-    audience_preset = st.selectbox("Quick select:", list(audience_presets.keys()))
-
-    if audience_preset == "Custom":
+    audience_preset = st.selectbox("", list(audience_presets.keys()), label_visibility="collapsed")
+    if audience_preset == "Custom →":
         target_audience = st.text_area(
-            "Describe your target audience:",
-            height=100,
-            placeholder="e.g., Healthcare IT administrators at hospitals with 200+ beds who need HIPAA-compliant solutions..."
+            "", height=68,
+            placeholder="Describe your audience…",
+            label_visibility="collapsed", key="custom_audience"
         )
     else:
-        target_audience = st.text_area(
-            "Target audience description:",
-            value=audience_presets[audience_preset],
-            height=100
-        )
+        target_audience = audience_presets[audience_preset]
 
-    st.markdown("---")
+st.markdown('<div class="field-label">Channels</div>', unsafe_allow_html=True)
 
-    # NEW FEATURE 3: Domain Selection
-    st.markdown("### 📱 Content Channels")
-    col1, col2 = st.columns(2)
-    with col1:
-        do_linkedin = st.checkbox("LinkedIn", value=True)
-        do_blog = st.checkbox("Blog Post", value=True)
-    with col2:
-        do_tweet = st.checkbox("Tweet Thread", value=True)
-        do_email = st.checkbox("Email", value=True)
+# Real SVG brand logos
+_LI_SVG = """<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 72 72' width='36' height='36'>
+  <rect width='72' height='72' rx='8' fill='#0A66C2'/>
+  <path fill='#fff' d='M21 25a5 5 0 110-10 5 5 0 010 10zm-4 5h8v25h-8V30zm13 0h7.7v3.4h.1c1.1-2 3.7-4 7.6-4 8.1 0 9.6 5.3 9.6 12.2V55H47V43.4c0-2.8-.05-6.4-3.9-6.4-3.9 0-4.5 3-4.5 6.2V55H30V30z'/>
+</svg>"""
 
-    st.markdown("---")
+_X_SVG = """<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 72 72' width='36' height='36'>
+  <rect width='72' height='72' rx='8' fill='#000'/>
+  <path fill='#fff' d='M41.2 32.7L54.5 17h-3.2L39.8 30.7 30.5 17H19l14 20.3L19 55h3.2l12.2-14.2L44.5 55H56L41.2 32.7zm-4.3 5L35.4 35l-11-15.8h5.3l9.3 13.3 1.5 2.2 11.3 16.2h-5.3l-9.6-13.8z'/>
+</svg>"""
 
-    # Launch button
-    launch = st.button("🚀 Launch Content Factory", use_container_width=True, type="primary")
+_GMAIL_SVG = """<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 72 72' width='36' height='36'>
+  <rect width='72' height='72' rx='8' fill='#fff'/>
+  <path fill='#EA4335' d='M12 54V28l24 16 24-16v26H12z'/>
+  <path fill='#FBBC04' d='M12 28l24 16-24-16z' />
+  <path fill='#4285F4' d='M60 28l-24 16 24-16z' />
+  <path fill='#34A853' d='M60 54V28H12v26h48z' fill-opacity='0'/>
+  <path fill='#EA4335' d='M12 23v5l24 16 24-16v-5L36 38 12 23z'/>
+  <rect x='12' y='23' width='48' height='31' rx='0' fill='none'/>
+  <path fill='#C5221F' d='M12 23v4l24 16 24-16v-4L36 37 12 23z' />
+  <path fill='#EA4335' d='M12 27v-4l-4-3v34l4 4V27z'/>
+  <path fill='#4285F4' d='M60 27v-4l4-3v34l-4 4V27z'/>
+  <path fill='#EA4335' d='M12 23h48l4-4H8l4 4z'/>
+</svg>"""
 
-# ── Main Content Area ──
-st.markdown('<p class="main-header">🏭 Autonomous Content Factory</p>', unsafe_allow_html=True)
-st.markdown('<p class="sub-header">Multi-agent AI pipeline that transforms source material into platform-ready content</p>', unsafe_allow_html=True)
+_BLOG_SVG = """<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 72 72' width='36' height='36'>
+  <rect width='72' height='72' rx='8' fill='#FF6B35'/>
+  <path fill='#fff' d='M20 50h32v4H20zm0-10h32v4H20zm0-10h20v4H20zm26.4-10.4l-2.8 2.8 5.6 5.6 2.8-2.8a2 2 0 000-2.8l-2.8-2.8a2 2 0 00-2.8 0zM20 38.2V44h5.8l17-17-5.8-5.8L20 38.2z'/>
+</svg>"""
 
-# Show configuration summary
-if not launch:
-    st.markdown("### 👈 Configure your campaign in the sidebar and hit Launch")
+ch1, ch2, ch3, ch4 = st.columns(4, gap="medium")
+with ch1:
+    st.markdown(f'<div class="ch-card">{_LI_SVG}<div class="ch-name">LinkedIn</div></div>', unsafe_allow_html=True)
+    do_linkedin = st.checkbox("LinkedIn", value=True, key="ch_li", label_visibility="collapsed")
+with ch2:
+    st.markdown(f'<div class="ch-card">{_X_SVG}<div class="ch-name">X  /  Twitter</div></div>', unsafe_allow_html=True)
+    do_tweet = st.checkbox("Tweets", value=True, key="ch_tw", label_visibility="collapsed")
+with ch3:
+    st.markdown(f'<div class="ch-card">{_GMAIL_SVG}<div class="ch-name">Email</div></div>', unsafe_allow_html=True)
+    do_email = st.checkbox("Email", value=True, key="ch_em", label_visibility="collapsed")
+with ch4:
+    st.markdown(f'<div class="ch-card">{_BLOG_SVG}<div class="ch-name">Blog Post</div></div>', unsafe_allow_html=True)
+    do_blog = st.checkbox("Blog", value=True, key="ch_bl", label_visibility="collapsed")
 
-    with st.expander("ℹ️ How it works", expanded=True):
-        cols = st.columns(4)
-        with cols[0]:
-            st.markdown("""
-            **🎨 Brand Analyst**
-            Scrapes your website to understand your brand voice, tone, and style
-            """)
-        with cols[1]:
-            st.markdown("""
-            **🔍 Researcher**
-            Extracts facts, features, and value propositions from your source material
-            """)
-        with cols[2]:
-            st.markdown("""
-            **✍️ Copywriter**
-            Generates platform-specific content matching your brand voice
-            """)
-        with cols[3]:
-            st.markdown("""
-            **📋 Editor**
-            Reviews for hallucinations, tone issues, and quality — sends revisions back
-            """)
+st.markdown("&nbsp;", unsafe_allow_html=True)
+launch = st.button("Generate Content", use_container_width=False, type="primary")
 
-# ── Run Campaign ──
+# ══════════════════════════════════════════════════════════════
+# RUN
+# ══════════════════════════════════════════════════════════════
 if launch:
-    # Validate inputs
     selected_domains = []
-    if do_linkedin:
-        selected_domains.append("linkedin")
-    if do_blog:
-        selected_domains.append("blog")
-    if do_tweet:
-        selected_domains.append("tweet")
-    if do_email:
-        selected_domains.append("email")
+    if do_linkedin: selected_domains.append("linkedin")
+    if do_blog:     selected_domains.append("blog")
+    if do_tweet:    selected_domains.append("tweet")
+    if do_email:    selected_domains.append("email")
 
     if not source_text.strip() and not source_url.strip():
-        st.error("⚠️ Please provide source material (text or URL)")
+        st.error("Add source material to continue.")
         st.stop()
-
     if not selected_domains:
-        st.error("⚠️ Please select at least one content channel")
+        st.error("Select at least one channel.")
         st.stop()
-
     if not target_audience.strip():
         target_audience = "general professionals"
 
-    # Build request
     payload = {
         "source_text": source_text,
-        "source_url": source_url if source_url else None,
-        "brand_url": brand_url if brand_url else None,
-        "target_audience": target_audience,
+        "source_url":  source_url or None,
+        "brand_url":   brand_url  or None,
+        "target_audience":  target_audience,
         "selected_domains": selected_domains,
     }
 
-    # ── Agent Activity Feed ──
     st.markdown("---")
-    st.markdown("### 🤖 Agent Room — Live Activity")
+    st.markdown('<div class="field-label">Agent Activity</div>', unsafe_allow_html=True)
+    log_container = st.container()
+    bar = st.progress(0, text="Starting…")
 
-    agent_log_container = st.container()
-    progress_bar = st.progress(0, text="Initializing agents...")
-
-    # ── Run via API ──
     with st.spinner(""):
         try:
-            response = requests.post(
-                f"{API_URL}/api/campaign",
-                json=payload,
-                timeout=300
-            )
-            response.raise_for_status()
-            result = response.json()
+            resp = requests.post(f"{API_URL}/api/campaign", json=payload, timeout=300)
+            resp.raise_for_status()
+            result = resp.json()
         except requests.exceptions.ConnectionError:
-            st.error("❌ Cannot connect to the backend. Make sure the FastAPI server is running on port 8000.")
-            st.code("cd backend && uvicorn main:app --reload --port 8000", language="bash")
+            st.error("Backend unreachable — is the FastAPI server on port 8000?")
             st.stop()
         except Exception as e:
-            st.error(f"❌ Error: {str(e)}")
+            st.error(f"Error: {e}")
             st.stop()
 
-    progress_bar.progress(100, text="Campaign complete!")
+    bar.progress(100, text="Done ✓")
 
-    # ── Display Agent Logs ──
-    with agent_log_container:
-        if result.get("agent_logs"):
-            for log in result["agent_logs"]:
-                agent = log.get("agent", "System")
-                action = log.get("action", "")
-                message = log.get("message", "")
-                ts = log.get("timestamp", "")
-
-                # Color coding
-                if "Brand" in agent:
-                    css_class = "agent-brand"
-                elif "Research" in agent:
-                    css_class = "agent-researcher"
-                elif "Copy" in agent or "Writ" in agent:
-                    css_class = "agent-copywriter"
-                elif "Editor" in agent:
-                    css_class = "agent-editor"
-                else:
-                    css_class = "agent-system"
-
-                st.markdown(
-                    f'<div class="agent-card {css_class}">'
-                    f'<strong>[{ts}] {agent}</strong> {action}<br>'
-                    f'<span style="color:#4b5563">{message}</span>'
-                    f'</div>',
-                    unsafe_allow_html=True
-                )
+    with log_container:
+        for log in result.get("agent_logs", []):
+            agent = log.get("agent", "System")
+            if "Brand"    in agent: css = "agent-brand"
+            elif "Research" in agent: css = "agent-researcher"
+            elif "Copy" in agent or "Writ" in agent: css = "agent-copywriter"
+            elif "Editor"  in agent: css = "agent-editor"
+            else: css = "agent-system"
+            st.markdown(
+                f'<div class="agent-card {css}">'
+                f'<strong>{agent}</strong> · {log.get("action","")}'
+                f'<br><span style="color:rgba(255,255,255,0.35)">{log.get("message","")}</span>'
+                f'</div>', unsafe_allow_html=True
+            )
 
     st.markdown("---")
 
-    # ══════════════════════════════════════════════
-    # RESULTS DISPLAY
-    # ══════════════════════════════════════════════
-
-    # ── Brand Style Summary ──
+    # Brand / Fact expanders
     if result.get("brand_style") and result["brand_style"].get("tone"):
         bs = result["brand_style"]
-        with st.expander("🎨 Brand Style Analysis", expanded=False):
-            col1, col2 = st.columns(2)
-            with col1:
-                st.markdown(f"**Brand:** {bs.get('brand_name', 'N/A')}")
-                st.markdown(f"**Tone:** {bs.get('tone', 'N/A')}")
-                if bs.get("voice_characteristics"):
-                    st.markdown(f"**Voice:** {', '.join(bs['voice_characteristics'])}")
-            with col2:
+        with st.expander("Brand Analysis"):
+            b1, b2 = st.columns(2)
+            with b1:
+                st.markdown(f"**Brand** · {bs.get('brand_name','—')}")
+                st.markdown(f"**Tone** · {bs.get('tone','—')}")
+            with b2:
                 if bs.get("messaging_themes"):
-                    st.markdown(f"**Themes:** {', '.join(bs['messaging_themes'][:5])}")
-                if bs.get("do_not_use"):
-                    st.markdown(f"**Avoid:** {', '.join(bs['do_not_use'][:5])}")
+                    st.markdown(f"**Themes** · {', '.join(bs['messaging_themes'][:4])}")
 
-    # ── Fact Sheet ──
     if result.get("fact_sheet"):
         fs = result["fact_sheet"]
-        with st.expander("📊 Source of Truth — Fact Sheet", expanded=False):
-            st.markdown(f"**Product:** {fs.get('product_name', 'N/A')}")
-            st.markdown(f"**Value Proposition:** {fs.get('value_proposition', 'N/A')}")
+        with st.expander("Fact Sheet"):
+            st.markdown(f"**{fs.get('product_name','—')}** — {fs.get('value_proposition','')}")
+            f1, f2 = st.columns(2)
+            with f1:
+                for f in fs.get("core_features", []):
+                    st.markdown(f"· {f}")
+            with f2:
+                for b in fs.get("key_benefits", []):
+                    st.markdown(f"· {b}")
 
-            col1, col2 = st.columns(2)
-            with col1:
-                if fs.get("core_features"):
-                    st.markdown("**Core Features:**")
-                    for f in fs["core_features"]:
-                        st.markdown(f"- {f}")
-            with col2:
-                if fs.get("key_benefits"):
-                    st.markdown("**Key Benefits:**")
-                    for b in fs["key_benefits"]:
-                        st.markdown(f"- {b}")
+    # Content
+    icon_map  = {"linkedin": "💼", "blog": "📝", "tweet": "🐦", "email": "📧"}
+    label_map = {"linkedin": "LinkedIn", "blog": "Blog", "tweet": "Tweets", "email": "Email"}
 
-            if fs.get("ambiguous_statements"):
-                st.warning("⚠️ **Ambiguous Statements Flagged:**")
-                for a in fs["ambiguous_statements"]:
-                    st.markdown(f"- _{a}_")
-
-    # ── Content Outputs ──
-    st.markdown("### 📦 Generated Content")
-
-    if result.get("content_pieces"):
-        # Summary metrics
-        pieces = result["content_pieces"]
-        metric_cols = st.columns(len(pieces))
+    pieces = result.get("content_pieces", [])
+    if pieces:
+        st.markdown('<div class="field-label" style="margin-top:1.8rem">Output</div>', unsafe_allow_html=True)
+        mcols = st.columns(len(pieces))
         for i, piece in enumerate(pieces):
-            with metric_cols[i]:
-                domain = piece.get("domain", "unknown")
-                status = piece.get("status", "unknown")
-                revisions = piece.get("revision_count", 0)
-
-                icon_map = {
-                    "linkedin": "💼",
-                    "blog": "📝",
-                    "tweet": "🐦",
-                    "email": "📧",
-                }
-                icon = icon_map.get(domain, "📄")
-
-                status_color = "🟢" if "approved" in status else "🟡" if status == "draft" else "🔴"
-
+            d = piece.get("domain","unknown")
+            s = piece.get("status","—")
+            dot = "●" if "approved" in s else "○"
+            with mcols[i]:
                 st.markdown(
                     f'<div class="metric-box">'
-                    f'<h3>{icon} {domain.upper()}</h3>'
-                    f'<p>{status_color} {status.replace("_", " ").title()}</p>'
-                    f'<small>Revisions: {revisions}</small>'
-                    f'</div>',
-                    unsafe_allow_html=True
+                    f'<h3>{icon_map.get(d,"📄")} {label_map.get(d,d)}</h3>'
+                    f'<p>{dot} {s.replace("_"," ").title()}</p>'
+                    f'<small>{piece.get("revision_count",0)} revision(s)</small>'
+                    f'</div>', unsafe_allow_html=True
                 )
 
-        st.markdown("---")
-
-        # ── Side-by-Side Content View ──
-        # Determine layout based on number of pieces
-        if len(pieces) <= 2:
-            cols = st.columns(len(pieces))
-        else:
-            cols = st.columns(2)
-
+        st.markdown("&nbsp;", unsafe_allow_html=True)
+        cols = st.columns(2) if len(pieces) > 2 else st.columns(len(pieces))
         for i, piece in enumerate(pieces):
-            domain = piece.get("domain", "unknown")
-            content = piece.get("content", "")
-            status = piece.get("status", "unknown")
-            editor_notes = piece.get("editor_notes", "")
-
-            icon_map = {"linkedin": "💼", "blog": "📝", "tweet": "🐦", "email": "📧"}
-            domain_labels = {"linkedin": "LinkedIn Post", "blog": "Blog Post", "tweet": "Tweet Thread", "email": "Email"}
-
-            col = cols[i % len(cols)]
-
-            with col:
-                st.markdown(f"#### {icon_map.get(domain, '📄')} {domain_labels.get(domain, domain)}")
-
-                if "approved" in status:
-                    st.success(f"Status: {status.replace('_', ' ').title()}")
-                else:
-                    st.warning(f"Status: {status}")
-
-                # Content display with proper formatting
-                if domain == "blog":
-                    st.markdown(content)
-                elif domain == "tweet":
-                    # Display each tweet separately
-                    tweets = [t.strip() for t in content.split("\n") if t.strip() and t.strip()[0:2] in ["1/", "2/", "3/", "4/", "5/"]]
-                    if not tweets:
-                        tweets = [t.strip() for t in content.split("\n\n") if t.strip()]
-
-                    for tweet in tweets:
-                        st.info(tweet)
-                elif domain == "email":
-                    st.markdown(content)
+            d       = piece.get("domain","unknown")
+            content = piece.get("content","")
+            status  = piece.get("status","—")
+            with cols[i % len(cols)]:
+                st.markdown(f"**{icon_map.get(d,'📄')} {label_map.get(d,d)}**")
+                if "approved" in status: st.success(status.replace("_"," ").title())
+                else: st.warning(status)
+                if d == "tweet":
+                    for tw in [t.strip() for t in content.split("\n\n") if t.strip()]:
+                        st.info(tw)
                 else:
                     st.markdown(content)
+                if piece.get("editor_notes"):
+                    st.caption(f"Editor · {piece['editor_notes']}")
+                st.text_area("", value=content, height=90,
+                             key=f"cp_{d}_{i}", label_visibility="collapsed")
 
-                if editor_notes:
-                    st.caption(f"📋 Editor: {editor_notes}")
-
-                # Copy button
-                st.text_area(
-                    f"Copy {domain} content:",
-                    value=content,
-                    height=100,
-                    key=f"copy_{domain}_{i}",
-                    label_visibility="collapsed"
-                )
-
-        # ── Export All ──
         st.markdown("---")
-        st.markdown("### 📥 Export Campaign Kit")
+        export_txt = "\n\n".join(
+            f"{'—'*40}\n{label_map.get(p.get('domain'),'')}\n{'—'*40}\n\n{p.get('content','')}"
+            for p in pieces
+        )
+        dl1, dl2, _ = st.columns([1, 1, 3])
+        with dl1:
+            st.download_button("↓ Text", data=export_txt,
+                               file_name="campaign.txt", mime="text/plain",
+                               use_container_width=True)
+        with dl2:
+            st.download_button("↓ JSON", data=json.dumps(result, indent=2),
+                               file_name="campaign.json", mime="application/json",
+                               use_container_width=True)
 
-        export_content = ""
-        for piece in pieces:
-            domain = piece.get("domain", "unknown")
-            content = piece.get("content", "")
-            export_content += f"{'='*60}\n"
-            export_content += f"  {domain.upper()}\n"
-            export_content += f"{'='*60}\n\n"
-            export_content += content
-            export_content += f"\n\n"
-
-        col1, col2 = st.columns(2)
-        with col1:
-            st.download_button(
-                "📥 Download Campaign Kit (.txt)",
-                data=export_content,
-                file_name="campaign_kit.txt",
-                mime="text/plain",
-                use_container_width=True,
-            )
-        with col2:
-            st.download_button(
-                "📥 Download as JSON",
-                data=json.dumps(result, indent=2),
-                file_name="campaign_data.json",
-                mime="application/json",
-                use_container_width=True,
-            )
-
-    # ── Side-by-Side: Source vs Output ──
-    if source_text.strip() and result.get("content_pieces"):
+    if source_text.strip() and pieces:
         st.markdown("---")
-        st.markdown("### 🔄 Source vs. Output Comparison")
-        comp_col1, comp_col2 = st.columns(2)
-        with comp_col1:
-            st.markdown("**📄 Original Source**")
-            st.text_area("source_original", source_text[:3000], height=400, label_visibility="collapsed")
-        with comp_col2:
-            domain_select = st.selectbox(
-                "Compare with:",
-                [p.get("domain", "unknown") for p in result["content_pieces"]]
-            )
-            selected_piece = next(
-                (p for p in result["content_pieces"] if p.get("domain") == domain_select), None
-            )
-            if selected_piece:
-                st.markdown(f"**{domain_select.upper()} Output**")
-                st.text_area("output_compare", selected_piece.get("content", ""), height=400,
-                           label_visibility="collapsed")
+        st.markdown('<div class="field-label">Compare</div>', unsafe_allow_html=True)
+        cm1, cm2 = st.columns(2)
+        with cm1:
+            st.caption("Source")
+            st.text_area("", source_text[:3000], height=320, label_visibility="collapsed")
+        with cm2:
+            domain_sel = st.selectbox("", [p.get("domain") for p in pieces], label_visibility="collapsed")
+            sel = next((p for p in pieces if p.get("domain") == domain_sel), None)
+            if sel:
+                st.caption(label_map.get(domain_sel, domain_sel))
+                st.text_area("", sel.get("content",""), height=320, label_visibility="collapsed")
