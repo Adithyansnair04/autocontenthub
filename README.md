@@ -3,16 +3,16 @@
 **Deployed Link:** [https://cogenlab.streamlit.app/](https://cogenlab.streamlit.app/)
 
 ## The Problem
-Creating, repurposing, and formatting content for varied digital platforms (like LinkedIn, X/Twitter, and Emails) is incredibly time-consuming. Maintaining a consistent brand voice across all mediums while ensuring the content feels timely usually requires significant manual editorial effort.
+Creating and formatting content for various digital platforms (like LinkedIn, X/Twitter, and Emails) is incredibly time-consuming. Maintaining a consistent brand voice across all mediums while ensuring the content feels fresh requires significant manual editorial effort.
 
 ## The Solution
-CogenLab is an autonomous content factory that solves this by orchestrating specialized AI agents. It uses a Brand Analyst to scrape and emulate the company's voice, a Researcher to extract and verify facts, a Trend Analyst to inject real-time market data and a Copywriter to draft platform-optimized posts. Finally, an autonomous Editor agent reviews and refines the copy to ensure high-quality, publication-ready output.
+CogenLab is an autonomous content factory that solves this by orchestrating specialized AI agents. It uses a Brand Analyst to scrape and emulate the company's voice, a Researcher to extract and verify facts, a Trend Analyst to analyse latest trends in different channel and market and a Copywriter to draft platform-optimized posts. Finally, an autonomous Editor agent reviews and refines the copy to ensure high-quality, publication-ready output.
 
 ## Additional Features
 * **5-Agent Pipeline:** Utilizes five distinct agents operating in sequence:
-  * **Brand Analyser:** Visits brand URLs and scrapes websites to accurately capture and emulate the company's unique voice and tone.
+  * **Brand Analyser:** Visits brand URLs and scrapes websites to accurately acquire and emulate the company's unique voice and tone.
   * **Researcher:** Sifts through raw source materials to aggregate and verify essential factual information.
-  * **Trend Analyser:** Injects real-time industry trends and current market contexts directly into the generation pipeline.
+  * **Trend Analyser:** Injects real-time channel trends and current market contexts directly into the generation pipeline.
   * **Copywriter:** Takes the brand playbook, researched facts, and trend contexts to draft initial platform-specific versions of the content.
   * **Editor:** Autonomously reviews drafts, scores the content, and refines the language through targeted revision loops prior to finalizing the content.
 * **Special Filtering for Channels:** Features specialized filtering rules to uniquely constrain and format copy appropriately for different output platforms (e.g., LinkedIn, Twitter, Email, Blogs).
